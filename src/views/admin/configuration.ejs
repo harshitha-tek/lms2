@@ -1,0 +1,30 @@
+<%- include('../partials/header', { title: 'Configuration' }) %>
+<%- include('../partials/sidebar', { title: 'Configuration' }) %>
+
+<div class="card">
+  <div class="card-header"><h2><i class="bi bi-sliders"></i> System configuration</h2><span class="muted">Every change is audited</span></div>
+  <form method="POST" action="/admin/configuration">
+    <div class="grid grid-2">
+      <% configs.forEach(function(c) { %>
+        <div class="field">
+          <label><%= c.configuration_key.replace(/_/g,' ') %></label>
+          <input name="<%= c.configuration_key %>" value="<%= c.configuration_value %>">
+        </div>
+      <% }) %>
+    </div>
+    <button class="btn btn-primary"><i class="bi bi-check-lg"></i> Save configuration</button>
+  </form>
+</div>
+
+<div class="card">
+  <div class="card-header"><h2><i class="bi bi-play-circle"></i> Scheduler / Background Jobs</h2></div>
+  <p class="muted">Runs automatically every night. Trigger manually here for demonstration — jobs are idempotent, so re-running a completed period is a no-op.</p>
+  <form method="POST" action="/admin/configuration/run-scheduler">
+    <button class="btn"><i class="bi bi-lightning-charge"></i> Run scheduler now</button>
+  </form>
+  <% if (typeof schedulerResult !== 'undefined' && schedulerResult) { %>
+    <pre style="margin-top:14px;background:rgba(15,27,61,0.05);padding:12px;border-radius:10px;font-size:12px;overflow:auto;"><%= JSON.stringify(schedulerResult, null, 2) %></pre>
+  <% } %>
+</div>
+
+<%- include('../partials/footer') %>

@@ -1,0 +1,56 @@
+<%- include('../partials/header', { title: request.request_number }) %>
+<%- include('../partials/sidebar', { title: request.request_number }) %>
+
+<div class="card">
+  <div class="card-header">
+    <h2><i class="bi bi-file-earmark-text"></i> <%= request.leave_name %> · <%= request.start_date %> → <%= request.end_date %></h2>
+    <span class="badge badge-info"><%= request.status.replace(/_/g,' ') %></span>
+  </div>
+  <div class="grid grid-3">
+    <div><div class="stat-label">Employee</div><div style="font-weight:600;"><%= request.employee_name %></div></div>
+    <div><div class="stat-label">Deducted days</div><div style="font-weight:600;"><%= request.deducted_days %></div></div>
+    <div><div class="stat-label">Advance leave?</div><div style="font-weight:600;"><%= request.is_advance_leave ? 'Yes' : 'No' %></div></div>
+  </div>
+  <% if (request.reason) { %><p style="margin-top:14px;"><span class="stat-label">Reason</span><br><%= request.reason %></p><% } %>
+</div>
+
+<div class="card">
+  <div class="card-header"><h2><i class="bi bi-clock-history"></i> Approval timeline</h2></div>
+  <% if (!approvals.length) { %>
+    <div class="empty-state"><i class="bi bi-hourglass"></i>No approval stage recorded yet (draft).</div>
+  <% } else { %>
+    <% approvals.forEach(function(a) { %>
+      <div class="list-row">
+        <div>
+          <div style="font-weight:600;"><%= a.approval_level %> approval — <%= a.approver_name %></div>
+          <% if (a.decided_at) { %><div class="muted" style="font-size:12.5px;">Decided <%= a.decided_at %><% if (a.decision_reason) { %> — "<%= a.decision_reason %>"<% } %></div><% } %>
+        </div>
+        <span class="badge badge-<%= a.status === 'APPROVED' ? 'success' : a.status === 'REJECTED' ? 'danger' : 'warning' %>"><%= a.status %></span>
+      </div>
+    <% }) %>
+  <% } %>
+</div>
+
+<div class="card">
+  <div class="card-header"><h2><i class="bi bi-eye"></i> Watchers</h2></div>
+  <% if (!watchers.length) { %><p class="muted">No watchers on this request.</p><% } else { %>
+    <% watchers.forEach(function(w) { %><span class="chip" style="margin-right:6px;"><%= w.full_name %> (<%= w.watcher_type.toLowerCase() %>)</span><% }) %>
+  <% } %>
+</div>
+
+<% if (isOwner) { %>
+<div class="card" style="display:flex;gap:12px;">
+  <% if (['PENDING_MANAGER','PENDING_HR'].includes(request.status)) { %>
+    <form method="POST" action="/leave/<%= request.leave_request_id %>/withdraw" onsubmit="return confirm('Withdraw this request?');">
+      <button class="btn btn-danger"><i class="bi bi-x-circle"></i> Withdraw</button>
+    </form>
+  <% } %>
+  <% if (request.status === 'APPROVED') { %>
+    <form method="POST" action="/leave/<%= request.leave_request_id %>/request-cancellation" onsubmit="return confirm('Request cancellation of this approved leave?');">
+      <button class="btn"><i class="bi bi-calendar-x"></i> Request cancellation</button>
+    </form>
+  <% } %>
+</div>
+<% } %>
+
+<%- include('../partials/footer') %>

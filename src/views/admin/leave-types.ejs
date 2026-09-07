@@ -1,0 +1,58 @@
+<%- include('../partials/header', { title: 'Leave Types' }) %>
+<%- include('../partials/sidebar', { title: 'Leave Types' }) %>
+
+<div class="card">
+  <div class="card-header"><h2><i class="bi bi-tag-fill"></i> Add leave type</h2></div>
+  <form method="POST" action="/admin/leave-types">
+    <div class="field-row">
+      <div class="field"><label>Code</label><input name="leave_code" required></div>
+      <div class="field"><label>Name</label><input name="leave_name" required></div>
+      <div class="field"><label>Carry-forward cap (days)</label><input type="number" step="0.5" name="carry_forward_cap"></div>
+    </div>
+    <div class="field-row">
+      <label class="checkbox-row"><input type="checkbox" name="is_sick_leave"> Sick leave (masked for watchers)</label>
+      <label class="checkbox-row"><input type="checkbox" name="allows_attachment"> Allows attachment</label>
+      <label class="checkbox-row"><input type="checkbox" name="allows_half_day" checked> Allows half-day</label>
+      <label class="checkbox-row"><input type="checkbox" name="carry_forward_allowed"> Allows carry-forward</label>
+    </div>
+    <button class="btn btn-primary"><i class="bi bi-check-lg"></i> Create leave type</button>
+  </form>
+</div>
+
+<div class="card">
+  <div class="card-header"><h2><i class="bi bi-tags"></i> Leave types</h2></div>
+  <table>
+    <thead><tr><th>Name</th><th>Code</th><th>Sick?</th><th>Half-day?</th><th>Carry-fwd?</th><th>System-managed?</th></tr></thead>
+    <tbody>
+      <% leaveTypes.forEach(function(lt) { %>
+        <tr>
+          <td data-label="Name"><%= lt.leave_name %></td>
+          <td data-label="Code"><%= lt.leave_code %></td>
+          <td data-label="Sick?"><%= lt.is_sick_leave ? 'Yes' : 'No' %></td>
+          <td data-label="Half-day?"><%= lt.allows_half_day ? 'Yes' : 'No' %></td>
+          <td data-label="Carry-fwd?"><%= lt.carry_forward_allowed ? ('up to ' + lt.carry_forward_cap) : 'No' %></td>
+          <td data-label="System?"><%= lt.is_system_managed ? 'Yes (non-deletable)' : 'No' %></td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</div>
+
+<div class="card">
+  <div class="card-header"><h2><i class="bi bi-diagram-3"></i> Entitlement policy by grade</h2></div>
+  <table>
+    <thead><tr><th>Leave type</th><th>Grade</th><th>Entitlement</th><th>Accrual</th></tr></thead>
+    <tbody>
+      <% policies.forEach(function(p) { %>
+        <tr>
+          <td data-label="Type"><%= p.leave_name %></td>
+          <td data-label="Grade"><%= p.grade_name %></td>
+          <td data-label="Entitlement"><%= p.entitlement_days %> days/yr</td>
+          <td data-label="Accrual"><%= p.accrual_frequency %></td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</div>
+
+<%- include('../partials/footer') %>

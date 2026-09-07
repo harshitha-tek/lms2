@@ -1,0 +1,28 @@
+<%- include('../partials/header', { title: 'My Profile' }) %>
+<%- include('../partials/sidebar', { title: 'My Profile' }) %>
+
+<div class="card">
+  <div class="card-header"><h2><i class="bi bi-person-circle"></i> <%= currentUser.full_name %></h2></div>
+  <div class="grid grid-3">
+    <div><div class="stat-label">Employee code</div><div style="font-weight:600;"><%= currentUser.employee_code %></div></div>
+    <div><div class="stat-label">Email</div><div style="font-weight:600;"><%= currentUser.email %></div></div>
+    <div><div class="stat-label">Joined</div><div style="font-weight:600;"><%= currentUser.joined_date %></div></div>
+    <div><div class="stat-label">Department</div><div style="font-weight:600;"><%= department ? department.department_name : '—' %></div></div>
+    <div><div class="stat-label">Grade</div><div style="font-weight:600;"><%= grade ? grade.grade_name : '—' %></div></div>
+    <div><div class="stat-label">Manager</div><div style="font-weight:600;"><%= manager ? manager.full_name : '—' %></div></div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><h2><i class="bi bi-kanban"></i> Project assignments</h2></div>
+  <% if (!projects.length) { %><div class="empty-state"><i class="bi bi-folder"></i>No project assignments.</div><% } else { %>
+    <% projects.forEach(function(p) { %>
+      <div class="list-row">
+        <div style="font-weight:600;"><%= p.project_name %></div>
+        <span class="muted"><%= p.assigned_from %> <%= p.assigned_to ? '→ ' + p.assigned_to : '(ongoing)' %></span>
+      </div>
+    <% }) %>
+  <% } %>
+</div>
+
+<%- include('../partials/footer') %>

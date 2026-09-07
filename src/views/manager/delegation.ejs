@@ -1,0 +1,37 @@
+<%- include('../partials/header', { title: 'Delegation' }) %>
+<%- include('../partials/sidebar', { title: 'Delegation' }) %>
+
+<div class="card">
+  <div class="card-header"><h2><i class="bi bi-arrow-left-right"></i> Nominate a delegate</h2></div>
+  <% if (!eligibleDelegates.length) { %>
+    <div class="alert alert-info"><i class="bi bi-info-circle"></i> No eligible peer managers found — delegation would default to your own supervisor.</div>
+  <% } else { %>
+    <form method="POST" action="/manager/delegation">
+      <div class="field-row">
+        <div class="field">
+          <label>Delegate</label>
+          <select name="delegate_id" required>
+            <% eligibleDelegates.forEach(function(d) { %><option value="<%= d.user_id %>"><%= d.full_name %></option><% }) %>
+          </select>
+        </div>
+        <div class="field"><label>Effective from</label><input type="date" name="effective_from" required></div>
+        <div class="field"><label>Effective to</label><input type="date" name="effective_to"></div>
+      </div>
+      <button class="btn btn-primary"><i class="bi bi-check-lg"></i> Set delegate</button>
+    </form>
+  <% } %>
+</div>
+
+<div class="card">
+  <div class="card-header"><h2><i class="bi bi-clock-history"></i> Current & scheduled</h2></div>
+  <% if (!current.length) { %><div class="empty-state"><i class="bi bi-calendar-minus"></i>No delegations set.</div><% } else { %>
+    <% current.forEach(function(d) { %>
+      <div class="list-row">
+        <div><%= d.delegate_name %></div>
+        <span class="muted"><%= d.effective_from %> <%= d.effective_to ? '→ ' + d.effective_to : '(ongoing)' %></span>
+      </div>
+    <% }) %>
+  <% } %>
+</div>
+
+<%- include('../partials/footer') %>

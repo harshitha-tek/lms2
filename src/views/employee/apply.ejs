@@ -1,0 +1,59 @@
+<%- include('../partials/header', { title: 'Apply for Leave' }) %>
+<%- include('../partials/sidebar', { title: 'Apply for Leave' }) %>
+
+<% if (error) { %>
+  <div class="alert alert-danger"><i class="bi bi-exclamation-octagon"></i> <%= error %></div>
+<% } %>
+
+<form id="apply-form" method="POST" action="/leave/apply" enctype="multipart/form-data">
+  <div class="card">
+    <div class="card-header"><h2><i class="bi bi-pencil-square"></i> Request details</h2></div>
+
+    <div class="field">
+      <label>Leave type</label>
+      <select name="leave_type_id" required>
+        <% leaveTypes.forEach(function(lt) { %>
+          <option value="<%= lt.leave_type_id %>" <%= (form.leave_type_id == lt.leave_type_id) ? 'selected' : '' %>><%= lt.leave_name %></option>
+        <% }) %>
+      </select>
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label>Start date</label>
+        <input type="date" name="start_date" value="<%= form.start_date || '' %>" required>
+      </div>
+      <div class="field">
+        <label>End date</label>
+        <input type="date" name="end_date" value="<%= form.end_date || '' %>" required>
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="checkbox-row"><input type="checkbox" name="is_half_day" <%= form.is_half_day ? 'checked' : '' %>> This is a half-day request</label>
+      <div id="half-day-options" style="display:<%= form.is_half_day ? 'block' : 'none' %>;margin-top:10px;max-width:220px;">
+        <select name="half_day_part">
+          <option value="FIRST_HALF">First half</option>
+          <option value="SECOND_HALF">Second half</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Reason</label>
+      <textarea name="reason" rows="3" placeholder="Optional"><%= form.reason || '' %></textarea>
+    </div>
+  </div>
+
+  <div class="card" id="calc-panel-wrapper">
+    <div class="card-header"><h2><i class="bi bi-calculator"></i> Cost of this request</h2><span class="muted">Updates as you change dates</span></div>
+    <div id="calc-panel"><p class="muted">Choose your dates to see the breakdown.</p></div>
+  </div>
+
+  <div class="card" style="display:flex;gap:12px;justify-content:flex-end;">
+    <button type="submit" name="action" value="draft" class="btn"><i class="bi bi-save"></i> Save as draft</button>
+    <button type="submit" name="action" value="submit" class="btn btn-primary"><i class="bi bi-send"></i> Submit request</button>
+  </div>
+</form>
+
+<%- include('../partials/footer') %>

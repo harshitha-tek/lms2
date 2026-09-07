@@ -1,0 +1,54 @@
+<%
+function isActive(p) { return currentPath === p ? 'active' : ''; }
+%>
+<div class="app-shell">
+  <div class="sidebar-scrim"></div>
+  <aside class="sidebar">
+    <div class="brand"><i class="bi bi-calendar2-check"></i> LMS 2.0</div>
+
+    <div class="nav-section-label">Employee</div>
+    <a class="nav-link <%= isActive('/dashboard') %>" href="/dashboard"><i class="bi bi-grid-1x2"></i> Dashboard</a>
+    <a class="nav-link <%= isActive('/leave/apply') %>" href="/leave/apply"><i class="bi bi-plus-circle"></i> Apply for Leave</a>
+    <a class="nav-link <%= isActive('/leave/my-requests') %>" href="/leave/my-requests"><i class="bi bi-list-check"></i> My Requests</a>
+    <a class="nav-link <%= isActive('/team-calendar') %>" href="/team-calendar"><i class="bi bi-calendar3"></i> Team Calendar</a>
+    <a class="nav-link <%= isActive('/holidays') %>" href="/holidays"><i class="bi bi-flag"></i> Holidays</a>
+    <a class="nav-link <%= isActive('/profile') %>" href="/profile"><i class="bi bi-person-circle"></i> My Profile</a>
+    <a class="nav-link <%= isActive('/notifications') %>" href="/notifications">
+      <i class="bi bi-bell"></i> Notifications
+      <% if (typeof unreadCount !== 'undefined' && unreadCount > 0) { %><span class="chip" style="margin-left:auto;"><%= unreadCount %></span><% } %>
+    </a>
+
+    <% if (currentUser.isManager) { %>
+      <div class="nav-section-label">Manager</div>
+      <a class="nav-link <%= isActive('/approvals') %>" href="/approvals"><i class="bi bi-check2-square"></i> Approvals</a>
+      <a class="nav-link <%= isActive('/manager/my-team') %>" href="/manager/my-team"><i class="bi bi-people"></i> My Team</a>
+      <a class="nav-link <%= isActive('/manager/delegation') %>" href="/manager/delegation"><i class="bi bi-arrow-left-right"></i> Delegation</a>
+    <% } %>
+
+    <% if (currentUser.isHrAdmin) { %>
+      <div class="nav-section-label">Administration</div>
+      <a class="nav-link <%= isActive('/admin/employees') %>" href="/admin/employees"><i class="bi bi-person-badge"></i> Employees</a>
+      <a class="nav-link <%= isActive('/admin/leave-types') %>" href="/admin/leave-types"><i class="bi bi-tags"></i> Leave Types</a>
+      <a class="nav-link <%= isActive('/admin/holidays') %>" href="/admin/holidays"><i class="bi bi-calendar-plus"></i> Holiday Admin</a>
+      <a class="nav-link <%= isActive('/admin/configuration') %>" href="/admin/configuration"><i class="bi bi-sliders"></i> Configuration</a>
+      <a class="nav-link <%= isActive('/admin/adjustments') %>" href="/admin/adjustments"><i class="bi bi-wallet2"></i> Balance Adjustment</a>
+      <a class="nav-link <%= isActive('/admin/reports') %>" href="/admin/reports"><i class="bi bi-bar-chart"></i> Reports</a>
+      <a class="nav-link <%= isActive('/admin/audit-log') %>" href="/admin/audit-log"><i class="bi bi-shield-check"></i> Audit Log</a>
+    <% } %>
+
+    <div class="sidebar-footer">
+      <a class="nav-link" href="/auth/logout"><i class="bi bi-box-arrow-right"></i> Sign out</a>
+    </div>
+  </aside>
+
+  <div class="main-area">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <button class="mobile-nav-toggle"><i class="bi bi-list"></i></button>
+        <h1><%= typeof title !== 'undefined' ? title : '' %></h1>
+      </div>
+      <div class="topbar-actions">
+        <span class="chip"><i class="bi bi-person"></i> <%= currentUser.full_name %></span>
+      </div>
+    </div>
+    <div class="content">

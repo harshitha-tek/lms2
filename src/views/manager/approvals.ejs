@@ -1,0 +1,63 @@
+<%- include('../partials/header', { title: 'Approvals' }) %>
+<%- include('../partials/sidebar', { title: 'Approvals' }) %>
+
+<div class="card">
+  <div class="card-header"><h2><i class="bi bi-check2-square"></i> Pending your decision</h2><span class="muted">SLA: <%= slaDays %> working days</span></div>
+  <% if (!pending.length) { %>
+    <div class="empty-state"><i class="bi bi-emoji-smile"></i>Queue clear — nothing pending.</div>
+  <% } else { %>
+    <% pending.forEach(function(r) { %>
+      <div class="list-row" style="align-items:flex-start;">
+        <div>
+          <div style="font-weight:700;"><%= r.employee_name %> · <%= r.leave_name %></div>
+          <div class="muted" style="font-size:13px;"><%= r.start_date %> → <%= r.end_date %> · <%= r.deducted_days %> day(s) · <%= r.approval_level %> stage</div>
+          <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;">
+            <% if (r.is_advance_leave) { %><span class="badge badge-warning"><i class="bi bi-exclamation-triangle"></i> Advance leave</span><% } %>
+            <% if (r.deducted_days > longLeaveThreshold) { %><span class="badge badge-info"><i class="bi bi-hourglass-split"></i> Long leave</span><% } %>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <form method="POST" action="/approvals/<%= r.leave_request_id %>/decide" onsubmit="return confirm('Approve this request?');">
+            <input type="hidden" name="approvalId" value="<%= r.approval_id %>">
+            <input type="hidden" name="decision" value="approve">
+            <button class="btn btn-primary btn-sm"><i class="bi bi-check-lg"></i> Approve</button>
+          </form>
+          <form method="POST" action="/approvals/<%= r.leave_request_id %>/decide">
+            <input type="hidden" name="approvalId" value="<%= r.approval_id %>">
+            <input type="hidden" name="decision" value="reject">
+            <input type="text" name="reason" placeholder="Reason (required to reject)" style="width:160px;display:inline-block;margin-right:6px;" required>
+            <button class="btn btn-danger btn-sm"><i class="bi bi-x-lg"></i> Reject</button>
+          </form>
+        </div>
+      </div>
+    <% }) %>
+  <% } %>
+</div>
+
+<div class="card">
+  <div class="card-header"><h2><i class="bi bi-calendar-x"></i> Cancellation requests</h2></div>
+  <% if (!cancellations.length) { %>
+    <div class="empty-state"><i class="bi bi-check2-circle"></i>No cancellation requests pending.</div>
+  <% } else { %>
+    <% cancellations.forEach(function(r) { %>
+      <div class="list-row">
+        <div>
+          <div style="font-weight:700;"><%= r.employee_name %> · <%= r.leave_name %></div>
+          <div class="muted" style="font-size:13px;"><%= r.start_date %> → <%= r.end_date %> · <%= r.request_number %></div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <form method="POST" action="/approvals/<%= r.leave_request_id %>/decide-cancellation">
+            <input type="hidden" name="decision" value="approve">
+            <button class="btn btn-primary btn-sm">Approve</button>
+          </form>
+          <form method="POST" action="/approvals/<%= r.leave_request_id %>/decide-cancellation">
+            <input type="hidden" name="decision" value="reject">
+            <button class="btn btn-sm">Reject</button>
+          </form>
+        </div>
+      </div>
+    <% }) %>
+  <% } %>
+</div>
+
+<%- include('../partials/footer') %>

@@ -1,0 +1,35 @@
+<%- include('../partials/header', { title: 'Holiday Administration' }) %>
+<%- include('../partials/sidebar', { title: 'Holiday Administration' }) %>
+
+<div class="card">
+  <div class="card-header"><h2><i class="bi bi-calendar-plus"></i> Add holiday</h2></div>
+  <form method="POST" action="/admin/holidays">
+    <div class="field-row">
+      <div class="field"><label>Date</label><input type="date" name="holiday_date" required></div>
+      <div class="field"><label>Name</label><input name="holiday_name" required></div>
+    </div>
+    <button class="btn btn-primary"><i class="bi bi-check-lg"></i> Add holiday</button>
+  </form>
+</div>
+
+<div class="card">
+  <div class="card-header"><h2><i class="bi bi-flag"></i> Holiday calendar</h2></div>
+  <table>
+    <thead><tr><th>Date</th><th>Name</th><th></th></tr></thead>
+    <tbody>
+      <% holidays.forEach(function(h) { %>
+        <tr>
+          <td data-label="Date"><%= h.holiday_date %></td>
+          <td data-label="Name"><%= h.holiday_name %></td>
+          <td data-label="">
+            <form method="POST" action="/admin/holidays/<%= h.holiday_id %>/delete" onsubmit="return confirm('Remove this holiday?');">
+              <button class="btn btn-sm btn-danger"><i class="bi bi-trash"></i></button>
+            </form>
+          </td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</div>
+
+<%- include('../partials/footer') %>

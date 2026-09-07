@@ -1,0 +1,35 @@
+<%- include('../partials/header', { title: 'My Team' }) %>
+<%- include('../partials/sidebar', { title: 'My Team' }) %>
+
+<div class="card">
+  <div class="card-header">
+    <h2><i class="bi bi-people"></i> Team balances</h2>
+    <div style="display:flex;gap:8px;">
+      <a href="/manager/my-team?scope=direct" class="btn btn-sm <%= scope==='direct' ? 'btn-primary' : '' %>">Direct reports</a>
+      <a href="/manager/my-team?scope=all" class="btn btn-sm <%= scope==='all' ? 'btn-primary' : '' %>">Full hierarchy</a>
+    </div>
+  </div>
+  <% if (!rows.length) { %>
+    <div class="empty-state"><i class="bi bi-people"></i>No reports found.</div>
+  <% } else { %>
+    <table>
+      <thead><tr><th>Employee</th><th>Taken this year</th><th>Pending</th><th>Balances</th></tr></thead>
+      <tbody>
+        <% rows.forEach(function(row) { %>
+          <tr>
+            <td data-label="Employee"><a href="/leave/my-requests"><%= row.person.full_name %></a></td>
+            <td data-label="Taken"><%= row.takenThisYear.toFixed(1) %></td>
+            <td data-label="Pending"><span class="<%= row.pendingDays > 0 ? 'badge badge-warning' : 'muted' %>"><%= row.pendingDays.toFixed(1) %></span></td>
+            <td data-label="Balances">
+              <% row.balances.forEach(function(b) { %>
+                <span class="chip" style="margin-right:4px;"><%= b.leaveType.leave_code %>: <%= b.effective.toFixed(1) %><% if (b.effective < 0) { %> ⚠<% } %></span>
+              <% }) %>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</div>
+
+<%- include('../partials/footer') %>

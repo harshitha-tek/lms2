@@ -1,0 +1,21 @@
+<% if (typeof currentUser !== 'undefined' && currentUser) { %>
+    </div>
+  </div>
+</div>
+
+<nav class="bottom-nav">
+  <a href="/dashboard" class="<%= currentPath === '/dashboard' ? 'active' : '' %>"><i class="bi bi-grid-1x2"></i>Home</a>
+  <a href="/leave/apply" class="<%= currentPath === '/leave/apply' ? 'active' : '' %>"><i class="bi bi-plus-circle"></i>Apply</a>
+  <% if (currentUser.isManager) { %>
+    <a href="/approvals" class="<%= currentPath === '/approvals' ? 'active' : '' %>"><i class="bi bi-check2-square"></i>Approvals</a>
+  <% } else { %>
+    <a href="/leave/my-requests" class="<%= currentPath === '/leave/my-requests' ? 'active' : '' %>"><i class="bi bi-list-check"></i>Requests</a>
+  <% } %>
+  <a href="/team-calendar" class="<%= currentPath === '/team-calendar' ? 'active' : '' %>"><i class="bi bi-calendar3"></i>Calendar</a>
+  <a href="/profile" class="<%= currentPath === '/profile' ? 'active' : '' %>"><i class="bi bi-person-circle"></i>Profile</a>
+</nav>
+<% } %>
+
+<script src="/js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,30 @@
+<%- include('../partials/header', { title: 'Reports' }) %>
+<%- include('../partials/sidebar', { title: 'Reports' }) %>
+
+<div class="card">
+  <div class="card-header"><h2><i class="bi bi-bar-chart"></i> Leave taken by type (this year)</h2></div>
+  <table>
+    <thead><tr><th>Leave type</th><th>Requests</th><th>Total days</th></tr></thead>
+    <tbody>
+      <% summary.forEach(function(s) { %>
+        <tr><td data-label="Type"><%= s.leave_name %></td><td data-label="Requests"><%= s.request_count %></td><td data-label="Days"><%= s.total_days %></td></tr>
+      <% }) %>
+    </tbody>
+  </table>
+</div>
+
+<div class="card">
+  <div class="card-header"><h2><i class="bi bi-cash-coin"></i> Loss-of-pay report</h2><span class="muted">For downstream payroll — no salary calculation performed here</span></div>
+  <% if (!lopReport.length) { %><div class="empty-state"><i class="bi bi-emoji-smile"></i>No LOP days recorded.</div><% } else { %>
+    <table>
+      <thead><tr><th>Employee</th><th>Request</th><th>Dates</th><th>Days</th></tr></thead>
+      <tbody>
+        <% lopReport.forEach(function(r) { %>
+          <tr><td data-label="Employee"><%= r.full_name %></td><td data-label="Request"><%= r.request_number %></td><td data-label="Dates"><%= r.start_date %> → <%= r.end_date %></td><td data-label="Days"><%= r.deducted_days %></td></tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</div>
+
+<%- include('../partials/footer') %>

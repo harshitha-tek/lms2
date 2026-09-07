@@ -1,0 +1,10 @@
+<%- include('partials/header', { title: title }) %>
+<div class="login-shell">
+  <div class="card login-card">
+    <i class="bi bi-exclamation-octagon" style="font-size:34px;color:var(--danger-text);"></i>
+    <h2 style="margin:14px 0 8px;"><%= title %></h2>
+    <p class="muted"><%= message %></p>
+    <a class="btn btn-primary btn-block" style="margin-top:16px;" href="/">Back to safety</a>
+  </div>
+</div>
+<%- include('partials/footer') %>

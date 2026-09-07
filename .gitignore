@@ -1,0 +1,6 @@
+node_modules/
+.env
+
+database/lms.sqlite
+database/sessions.sqlite
+*.log
