@@ -2,13 +2,17 @@
   "name": "lms-2.0",
   "version": "1.0.0",
   "description": "Leave Management System 2.0 — reference MVC implementation (FRD v2.0)",
-  "main": "src/app.js",
+  "main": "backend/app.js",
   "engines": {
     "node": ">=22.5.0"
   },
   "scripts": {
-    "start": "node src/app.js",
-    "dev": "node src/app.js"
+    "start": "node backend/app.js",
+    "dev": "vite --config frontend/vite.config.js",
+    "dev:server": "node backend/app.js",
+    "build": "vite build --config frontend/vite.config.js",
+    "db:seed-mysql": "node backend/database/seed-mysql.js",
+    "db:validate-mysql": "node backend/database/validate-mysql-schema.js"
   },
   "dependencies": {
     "dayjs": "^1.11.13",
@@ -16,7 +20,16 @@
     "ejs": "^3.1.10",
     "express": "^4.21.0",
     "express-session": "^1.18.0",
+    "multer": "^2.3.0",
+    "mysql2": "^3.24.4",
     "node-cron": "^3.0.3",
     "openid-client": "^5.6.5"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^6.1.1",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "react-router-dom": "^7.18.3",
+    "vite": "^8.2.2"
   }
 }

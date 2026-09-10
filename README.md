@@ -36,6 +36,19 @@ You'll land on a **dev-mode sign-in screen** listing three seeded demo users:
 
 Pick one and you're in. No password, because there isn't one — see **Auth modes** below.
 
+## Checking saved data
+
+This demo writes its live data to `backend/database/lms.sqlite`; it does not use the
+`MYSQL_*` setting in `.env`. After submitting data in the UI, run this from the
+project root to inspect the latest leave requests:
+
+```powershell
+node -e "const db=require('./backend/database/db'); console.table(db.prepare('SELECT leave_request_id, employee_id, status, start_date, end_date, created_at FROM leave_requests ORDER BY leave_request_id DESC LIMIT 10').all())"
+```
+
+To inspect holidays, replace the SQL inside `prepare(...)` with
+`SELECT * FROM holidays ORDER BY holiday_date`.
+
 ## Why SQLite for the demo
 
 The schema was originally designed for PostgreSQL/MySQL — `database/schema.postgres.sql`
