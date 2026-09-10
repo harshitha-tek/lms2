@@ -28,6 +28,7 @@ import { WorkingPatterns } from './pages/admin/WorkingPatterns';
 import { NotificationTemplates } from './pages/admin/NotificationTemplates';
 import { AdminDelegations } from './pages/admin/AdminDelegations';
 import { SelfApprovalConfig } from './pages/admin/SelfApprovalConfig';
+import { Departments } from './pages/admin/Departments';
 import { ProfilePage } from './pages/ProfilePage';
 
 import { NotFound } from './pages/NotFound';
@@ -103,6 +104,7 @@ export const App = () => {
         <Route path="/admin/working-patterns" element={<WorkingPatterns />} />
         <Route path="/admin/notification-templates" element={<NotificationTemplates />} />
         <Route path="/admin/delegations" element={<AdminDelegations />} />
+        <Route path="/admin/departments" element={<Departments />} />
         <Route path="/admin/self-approval" element={<SelfApprovalConfig />} />
         <Route path="/admin/holidays" element={<HolidayAdmin />} />
         <Route path="/admin/adjustments" element={<BalanceAdjustment />} />

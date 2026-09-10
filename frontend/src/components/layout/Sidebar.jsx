@@ -193,6 +193,7 @@ export const Sidebar = ({ isMobileOpen, closeMobile }) => {
                 <NavItem to="/admin/employees"            icon="person-badge"        label="Employees"             onClick={closeMobile} />
                 <NavItem to="/admin/working-patterns"     icon="clock-history"       label="Working Patterns"      onClick={closeMobile} />
                 <NavItem to="/admin/delegations"          icon="person-gear"         label="Delegations"           onClick={closeMobile} />
+                <NavItem to="/admin/departments" icon="building" label="Departments" onClick={closeMobile} />
                 <NavItem to="/admin/self-approval"        icon="shield-check"        label="Self-Approval Policy"  onClick={closeMobile} />
               </NavGroup>
 
