@@ -181,6 +181,7 @@ export const Sidebar = ({ isMobileOpen, closeMobile }) => {
                 <NavItem to="/approvals"   icon="check2-square" label="Approvals Queue" onClick={closeMobile} badge="Action" />
                 <NavItem to="/my-team"     icon="people"        label="Team Balances"   onClick={closeMobile} />
                 <NavItem to="/delegation"  icon="person-gear"   label="Delegations"     onClick={closeMobile} />
+                <NavItem to="/watchers"    icon="eye"           label="Watchers"        onClick={closeMobile} />
               </NavGroup>
             </>
           )}

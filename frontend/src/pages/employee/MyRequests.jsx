@@ -309,6 +309,10 @@ export const MyRequests = () => {
                     <span key={idx} style={{ padding: '4px 10px', borderRadius: '999px', background: 'rgba(59, 130, 246, 0.15)', color: '#93c5fd', fontSize: '12px', border: '1px solid rgba(59, 130, 246, 0.3)' }}>
                       <i className="bi bi-eye" style={{ marginRight: '6px' }} />
                       {w.full_name || `User #${w.watcher_user_id}`}
+                      <span style={{ opacity: 0.7 }}>
+                        {' · '}
+                        {w.watcher_type === 'PROJECT_LEAD' ? 'Project Lead' : w.watcher_type === 'STANDING' ? 'Standing' : 'Manually Added'}
+                      </span>
                     </span>
                   ))}
                 </div>

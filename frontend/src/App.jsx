@@ -16,6 +16,7 @@ import { NotificationsPage } from './pages/employee/NotificationsPage';
 import { ApprovalsQueue } from './pages/manager/ApprovalsQueue';
 import { MyTeam } from './pages/manager/MyTeam';
 import { Delegation } from './pages/manager/Delegation';
+import { Watchers } from './pages/manager/Watchers';
 
 // HR / Admin Pages
 import { EmployeeAdmin } from './pages/admin/EmployeeAdmin';
@@ -97,6 +98,8 @@ export const App = () => {
         <Route path="/manager/my-team" element={<MyTeam />} />
         <Route path="/delegation" element={<Delegation />} />
         <Route path="/manager/delegation" element={<Delegation />} />
+        <Route path="/watchers" element={<Watchers />} />
+        <Route path="/manager/watchers" element={<Watchers />} />
 
         {/* HR / Admin Panel */}
         <Route path="/admin/employees" element={<EmployeeAdmin />} />

@@ -65,9 +65,28 @@ router.get('/leave/requests', (req, res) => res.json(LeaveRequest.forEmployee(re
 router.get('/leave/requests/:id', (req, res) => {
   const request = LeaveRequest.findById(req.params.id);
   if (!request) return res.status(404).json({ error: 'Request not found.' });
-  const allowed = request.employee_id === req.currentUser.user_id || request.manager_id === req.currentUser.user_id || req.currentUser.isHrAdmin;
-  if (!allowed) return res.status(403).json({ error: 'Access denied.' });
-  res.json({ request, approvals: LeaveRequest.approvalsFor(request.leave_request_id), dates: LeaveRequest.requestDates(request.leave_request_id), watchers: Watcher.forRequest(request.leave_request_id) });
+  const fullAccess = request.employee_id === req.currentUser.user_id || request.manager_id === req.currentUser.user_id || req.currentUser.isHrAdmin;
+  if (fullAccess) {
+    return res.json({ request, approvals: LeaveRequest.approvalsFor(request.leave_request_id), dates: LeaveRequest.requestDates(request.leave_request_id), watchers: Watcher.forRequest(request.leave_request_id) });
+  }
+  // BR-42 / LMS-064: a Watcher gets dates, status and leave type only, masked
+  // at the query layer — Sick is rendered as "Unavailable", and reason text
+  // and attachments never reach the client, for any leave type.
+  if (Watcher.isWatcher(req.currentUser.user_id, request.leave_request_id)) {
+    return res.json({
+      request: {
+        leave_request_id: request.leave_request_id,
+        request_number: request.request_number,
+        employee_name: request.employee_name,
+        start_date: request.start_date,
+        end_date: request.end_date,
+        status: request.status,
+        leave_name: request.is_sick_leave ? 'Unavailable' : request.leave_name,
+      },
+      isWatcherView: true,
+    });
+  }
+  return res.status(403).json({ error: 'Access denied.' });
 });
 router.post('/leave/requests', upload.single('attachment'), (req, res) => {
   const { leave_type_id, start_date, end_date, is_half_day, half_day_part, reason, action } = req.body;
@@ -97,8 +116,29 @@ router.post('/leave/requests', upload.single('attachment'), (req, res) => {
       }
     }
     Notification.create(req.currentUser.user_id, 'REQUEST_SUBMITTED', 'Leave request submitted', `Your request has been submitted.`, id);
+    // LMS-014 / LMS-062: project leads and any active standing watchers on
+    // this employee are automatically attached as watchers of this request.
+    Watcher.attachAutoWatchers(req.currentUser.user_id, id);
   }
   res.status(201).json({ id, request: LeaveRequest.findById(id) });
+});
+// Manager: add an ad-hoc watcher to a specific request within their reporting line (LMS-060).
+router.post('/leave/requests/:id/watchers', (req, res) => {
+  const { watcher_user_id } = req.body;
+  const request = LeaveRequest.findById(req.params.id);
+  if (!request) return res.status(404).json({ error: 'Request not found.' });
+
+  const inChain = User.allReportsRecursive(req.currentUser.user_id).some(r => r.user_id === request.employee_id);
+  if (!inChain && !req.currentUser.isHrAdmin) return res.status(403).json({ error: 'This request is not within your reporting line.' });
+
+  const candidate = User.findById(Number(watcher_user_id));
+  if (!candidate) return res.status(400).json({ error: 'Watcher not found.' });
+  // LMS-063: a Watcher must hold the Manager or HR/Admin role.
+  if (!candidate.isManager && !candidate.isHrAdmin) return res.status(400).json({ error: 'A Watcher must hold the Manager or HR/Admin role.' });
+
+  Watcher.addRequestWatcher(candidate.user_id, request.leave_request_id, 'REQUEST');
+  Audit.log(req.currentUser.user_id, 'watchers', request.leave_request_id, 'WATCHER_ADDED', null, { watcher_user_id: candidate.user_id });
+  res.status(201).json({ success: true, watchers: Watcher.forRequest(request.leave_request_id) });
 });
 router.post('/leave/requests/:id/withdraw', (req, res) => {
   const request = LeaveRequest.findById(req.params.id);
@@ -254,6 +294,57 @@ router.get('/manager/team', (req, res) => {
     return { person: p, balances, takenThisYear, pendingDays };
   });
   res.json({ rows, scope });
+});
+
+// Manager: a team member's request history, for drill-through and for picking
+// a specific request to add an ad-hoc Watcher to (LMS-060, screen 7.3.11).
+router.get('/manager/employees/:id/requests', (req, res) => {
+  const employeeId = Number(req.params.id);
+  const inChain = User.allReportsRecursive(req.currentUser.user_id).some(r => r.user_id === employeeId);
+  if (!inChain && !req.currentUser.isHrAdmin) return res.status(403).json({ error: 'This employee is not within your reporting line.' });
+  res.json(LeaveRequest.forEmployee(employeeId));
+});
+
+// Manager / HR-Admin: Standing Watchers (LMS-061, LMS-062).
+// A Manager may set one on any of their own direct or indirect reports; HR/Admin may set one on any employee.
+router.get('/manager/standing-watchers', (req, res) => {
+  if (!req.currentUser.isManager && !req.currentUser.isHrAdmin) return res.status(403).json({ error: 'Manager access required.' });
+  const watchableEmployees = req.currentUser.isHrAdmin ? User.allActive() : User.allReportsRecursive(req.currentUser.user_id);
+  const current = req.currentUser.isHrAdmin
+    ? Watcher.allStandingWatchers()
+    : Watcher.standingWatchersOn(watchableEmployees.map(e => e.user_id));
+  const eligibleWatchers = User.allActive().filter(u => u.isManager || u.isHrAdmin);
+  res.json({ current, watchableEmployees, eligibleWatchers });
+});
+router.post('/manager/standing-watchers', (req, res) => {
+  if (!req.currentUser.isManager && !req.currentUser.isHrAdmin) return res.status(403).json({ error: 'Manager access required.' });
+  const { watcher_user_id, watched_employee_id, effective_from, effective_to } = req.body;
+  const watchedId = Number(watched_employee_id);
+
+  const inChain = User.allReportsRecursive(req.currentUser.user_id).some(r => r.user_id === watchedId);
+  if (!inChain && !req.currentUser.isHrAdmin) return res.status(403).json({ error: 'That employee is not within your reporting line.' });
+
+  const candidate = User.findById(Number(watcher_user_id));
+  if (!candidate) return res.status(400).json({ error: 'Watcher not found.' });
+  // LMS-063: a Watcher must hold the Manager or HR/Admin role.
+  if (!candidate.isManager && !candidate.isHrAdmin) return res.status(400).json({ error: 'A Watcher must hold the Manager or HR/Admin role.' });
+  if (!effective_from) return res.status(400).json({ error: 'An effective-from date is required.' });
+
+  const id = Watcher.createStandingWatcher(candidate.user_id, watchedId, effective_from, effective_to || null);
+  Audit.log(req.currentUser.user_id, 'watchers', id, 'STANDING_WATCHER_CREATED', null, { watcher_user_id: candidate.user_id, watched_employee_id: watchedId, effective_from, effective_to });
+  res.status(201).json({ success: true, id });
+});
+router.delete('/manager/standing-watchers/:id', (req, res) => {
+  if (!req.currentUser.isManager && !req.currentUser.isHrAdmin) return res.status(403).json({ error: 'Manager access required.' });
+  const watcher = Watcher.findStandingWatcher(req.params.id);
+  if (!watcher) return res.status(404).json({ error: 'Standing watcher not found.' });
+
+  const inChain = User.allReportsRecursive(req.currentUser.user_id).some(r => r.user_id === watcher.watched_employee_id);
+  if (!inChain && !req.currentUser.isHrAdmin) return res.status(403).json({ error: 'That employee is not within your reporting line.' });
+
+  Watcher.revokeStandingWatcher(req.params.id);
+  Audit.log(req.currentUser.user_id, 'watchers', req.params.id, 'STANDING_WATCHER_REVOKED');
+  res.json({ success: true });
 });
 
 // Manager: Delegation (LMS-041)
