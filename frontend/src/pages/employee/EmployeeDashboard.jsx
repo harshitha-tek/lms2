@@ -117,7 +117,7 @@ export const EmployeeDashboard = () => {
                   </div>
 
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '14px' }}>
-                    <span style={{ fontSize: '36px', fontWeight: 800, color: isNegative ? '#f87171' : '#ffffff' }}>
+                    <span style={{ fontSize: '36px', fontWeight: 800, color: isNegative ? 'var(--danger)' : 'var(--text-main)' }}>
                       {effective.toFixed(1)}
                     </span>
                     <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>days available</span>
