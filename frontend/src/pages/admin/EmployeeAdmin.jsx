@@ -119,7 +119,7 @@ export const EmployeeAdmin = () => {
         <div>
           <h1 style={{ fontSize: '24px', fontWeight: 800 }}>Employee Directory & Hierarchy</h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>
-            Manage employee master data, reporting lines, departments, and roles (LMS-010 to LMS-014).
+            Manage employee master data, reporting lines, departments, and roles.
           </p>
         </div>
 
@@ -357,7 +357,7 @@ export const EmployeeAdmin = () => {
 
           <div style={{ padding: '10px 14px', borderRadius: 'var(--radius-sm)', background: 'rgba(59, 130, 246, 0.12)', border: '1px solid rgba(59, 130, 246, 0.3)', fontSize: '12px', color: '#93c5fd' }}>
             <i className="bi bi-info-circle" style={{ marginRight: '6px' }} />
-            Per BR-13 to BR-15, opening pro-rata entitlement will be automatically computed and credited to the append-only ledger upon creation.
+            Opening pro-rata entitlement will be automatically computed and credited to the append-only ledger upon creation.
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>

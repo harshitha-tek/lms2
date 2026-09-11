@@ -162,7 +162,7 @@ export const SelfApprovalConfig = () => {
             </h1>
           </div>
           <p style={{ color: 'var(--text-muted)', fontSize: '13.5px', marginTop: '6px', maxWidth: '750px' }}>
-            Configure approval authority levels and restrictions for supervisory roles. Per FRD Section 3.4 &amp; BR-36, self-approval is restricted by default to maintain corporate governance.
+            Configure approval authority levels and restrictions for supervisory roles. Self-approval is restricted by default to maintain corporate governance.
           </p>
         </div>
 

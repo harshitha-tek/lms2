@@ -269,7 +269,7 @@ WEEKEND_ON,Weekend Coverage (Thu-Mon 8h),8,8,0,0,8,8,8`;
             </h1>
           </div>
           <p style={{ color: 'var(--text-muted)', fontSize: '13.5px', marginTop: '6px', maxWidth: '750px' }}>
-            Define custom schedules and weekend days for round-the-clock teams. Exactly one active working pattern is enforced per employee on any given date (FRD BR-06 & LMS-015).
+            Define custom schedules and weekend days for round-the-clock teams. Exactly one active working pattern is enforced per employee on any given date.
           </p>
         </div>
 
@@ -865,7 +865,7 @@ WEEKEND_ON,Weekend Coverage (Thu-Mon 8h),8,8,0,0,8,8,8`;
             }}
           >
             <i className="bi bi-info-circle-fill" style={{ color: 'var(--primary)', marginRight: '6px' }} />
-            Per FRD BR-06, an employee may have exactly one active working pattern on any given date. If an overlapping assignment exists, submission will be rejected.
+            An employee may have exactly one active working pattern on any given date. If an overlapping assignment exists, submission will be rejected.
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '8px' }}>

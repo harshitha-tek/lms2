@@ -82,13 +82,13 @@ export const BalanceAdjustment = () => {
       <div>
         <h1 style={{ fontSize: '24px', fontWeight: 800 }}>Balance Adjustment & Ledger Audit</h1>
         <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>
-          Post signed compensating ledger entries and inspect full immutable append-only transaction logs (LMS-054, BR-07).
+          Post signed compensating ledger entries and inspect full immutable append-only transaction logs.
         </p>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(320px, 1.2fr) minmax(350px, 1.8fr)', gap: '24px' }}>
         {/* Adjustment Form */}
-        <GlassCard title="Post Manual Adjustment (LMS-054)" icon="sliders">
+        <GlassCard title="Post Manual Adjustment" icon="sliders">
           <form onSubmit={handlePost} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px' }}>
@@ -181,7 +181,7 @@ export const BalanceAdjustment = () => {
         </GlassCard>
 
         {/* Append-Only Ledger Viewer */}
-        <GlassCard title="Append-Only Ledger Transactions (LMS-057)" icon="journal-text">
+        <GlassCard title="Append-Only Ledger Transactions" icon="journal-text">
           {loadingLedger ? (
             <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)' }}>
               <i className="bi bi-arrow-repeat spin" style={{ fontSize: '24px' }} />

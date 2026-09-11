@@ -66,7 +66,7 @@ export const Delegation = () => {
         <div>
           <h1 style={{ fontSize: '24px', fontWeight: 800 }}>Approval Delegation</h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>
-            Nominate peer managers or supervisor to act on your approval queue during temporary absence (LMS-041).
+            Nominate a peer manager or your supervisor to act on your approval queue during temporary absence.
           </p>
         </div>
 
@@ -143,7 +143,7 @@ export const Delegation = () => {
       >
         <form onSubmit={handleCreate} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
-            Per LMS-041, only peer managers under the same supervisor or your direct supervisor may act as delegates.
+            Only peer managers under the same supervisor, or your direct supervisor, may act as delegates.
           </p>
 
           <div>

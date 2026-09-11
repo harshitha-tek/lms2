@@ -139,7 +139,7 @@ export const AdminDelegations = () => {
             </h1>
           </div>
           <p style={{ color: 'var(--text-muted)', fontSize: '13.5px', marginTop: '6px', maxWidth: '750px' }}>
-            Manage organization-wide approval delegations. Set emergency delegation coverage on behalf of managers or revoke delegations per FRD LMS-041 &amp; LMS-042.
+            Manage organization-wide approval delegations. Set emergency delegation coverage on behalf of managers or revoke delegations.
           </p>
         </div>
 
@@ -433,7 +433,7 @@ export const AdminDelegations = () => {
               </select>
             )}
             <small style={{ color: 'var(--text-subtle)', fontSize: '11px', display: 'block', marginTop: '4px' }}>
-              Per LMS-041: only a peer Manager reporting to the same supervisor is eligible; where none
+              Only a peer Manager reporting to the same supervisor is eligible; where none
               exists, the manager's own supervisor is offered instead.
             </small>
           </div>
@@ -478,7 +478,7 @@ export const AdminDelegations = () => {
             }}
           >
             <i className="bi bi-shield-check" style={{ color: 'var(--primary)', marginRight: '6px' }} />
-            Per FRD LMS-042, when an administrator sets an emergency delegation, both the manager and the delegate are notified via automated email, and the audit log records the HR actor.
+            When an administrator sets an emergency delegation, both the manager and the delegate are notified via automated email, and the audit log records the HR actor.
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '6px' }}>

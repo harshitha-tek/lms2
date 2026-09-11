@@ -77,7 +77,7 @@ export const LeaveTypeConfig = () => {
         <div>
           <h1 style={{ fontSize: '24px', fontWeight: 800 }}>Leave Types & Policy Configuration</h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>
-            Configure entitlement, accrual rules, carry-forward caps, and half-day permissions (LMS-024).
+            Configure entitlement, accrual rules, carry-forward caps, and half-day permissions.
           </p>
         </div>
 
@@ -159,7 +159,7 @@ export const LeaveTypeConfig = () => {
                               fontWeight: 600,
                             }}
                           >
-                            Protected System (LMS-025)
+                            Protected System
                           </span>
                         ) : (
                           <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Configured</span>
@@ -217,7 +217,7 @@ export const LeaveTypeConfig = () => {
       <Modal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
-        title="Create New Leave Type (LMS-024)"
+        title="Create New Leave Type"
       >
         <form onSubmit={handleCreate} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '12px' }}>
@@ -253,7 +253,7 @@ export const LeaveTypeConfig = () => {
                 onChange={(e) => setForm({ ...form, is_sick_leave: e.target.checked })}
                 style={{ accentColor: '#3b82f6', width: '16px', height: '16px' }}
               />
-              <span>Is Medical / Sick Leave (applies 3-day alert threshold per BR-43)</span>
+              <span>Is Medical / Sick Leave (applies the extended-absence alert threshold)</span>
             </label>
 
             <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13.5px', cursor: 'pointer' }}>

@@ -66,7 +66,7 @@ export const TeamCalendar = () => {
           <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>
             {user.isManager || user.isHrAdmin
               ? 'View approved leave coverage for everyone in your reporting line.'
-              : 'Privacy-safe peer calendar — name, dates, and status only (BR-41).'}
+              : 'Privacy-safe peer calendar — name, dates, and status only.'}
           </p>
         </div>
 

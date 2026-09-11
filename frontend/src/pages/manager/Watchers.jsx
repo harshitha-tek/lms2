@@ -126,7 +126,7 @@ export const Watchers = () => {
       <div>
         <h1 style={{ fontSize: '24px', fontWeight: 800 }}>Watchers</h1>
         <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>
-          Grant read-only, masked visibility of leave requests to another Manager or HR/Admin (LMS-060 to LMS-065).
+          Grant read-only, masked visibility of leave requests to another Manager or HR/Admin.
           Watchers never see reason text or attachments, and Sick leave is always shown as "Unavailable".
         </p>
       </div>
@@ -291,7 +291,7 @@ export const Watchers = () => {
       >
         <form onSubmit={handleCreateStanding} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
-            Per LMS-063, only users holding the Manager or HR/Admin role may be a Watcher.
+            Only users holding the Manager or HR/Admin role may be a Watcher.
           </p>
 
           <div>

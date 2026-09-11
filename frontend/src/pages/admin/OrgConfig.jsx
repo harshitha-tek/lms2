@@ -69,7 +69,7 @@ export const OrgConfig = () => {
         <div>
           <h1 style={{ fontSize: '24px', fontWeight: 800 }}>Organisation Configuration</h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>
-            System-wide leave rules, working days, backdating windows, SLA periods, and alerts (LMS-020 to LMS-032).
+            System-wide leave rules, working days, backdating windows, SLA periods, and alerts.
           </p>
         </div>
 
@@ -115,7 +115,7 @@ export const OrgConfig = () => {
                   onChange={(e) => handleChange('leave_year_start', e.target.value)}
                 />
                 <small style={{ color: '#fbbf24', fontSize: '11.5px', marginTop: '4px', display: 'block' }}>
-                  Note: Changes take effect from the next leave year only (BR-01).
+                  Note: Changes take effect from the next leave year only.
                 </small>
               </div>
 
@@ -130,7 +130,7 @@ export const OrgConfig = () => {
                   onChange={(e) => handleChange('timezone', e.target.value)}
                 />
                 <small style={{ color: 'var(--text-subtle)', fontSize: '11.5px', marginTop: '4px', display: 'block' }}>
-                  Default: Asia/Kolkata (LMS-023).
+                  Default: Asia/Kolkata.
                 </small>
               </div>
 
@@ -145,7 +145,7 @@ export const OrgConfig = () => {
                   onChange={(e) => handleChange('weekend_days', e.target.value)}
                 />
                 <small style={{ color: 'var(--text-subtle)', fontSize: '11.5px', marginTop: '4px', display: 'block' }}>
-                  Comma-separated weekday numbers (LMS-021).
+                  Comma-separated weekday numbers.
                 </small>
               </div>
             </div>
@@ -158,7 +158,7 @@ export const OrgConfig = () => {
                   onChange={(e) => handleChange('count_weekends_within_leave', String(e.target.checked))}
                   style={{ accentColor: '#3b82f6', width: '16px', height: '16px' }}
                 />
-                <span>Count weekend days within requested leave spans as deducted days (BR-04)</span>
+                <span>Count weekend days within requested leave spans as deducted days</span>
               </label>
 
               <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13.5px', cursor: 'pointer' }}>
@@ -168,7 +168,7 @@ export const OrgConfig = () => {
                   onChange={(e) => handleChange('count_holidays_within_leave', String(e.target.checked))}
                   style={{ accentColor: '#3b82f6', width: '16px', height: '16px' }}
                 />
-                <span>Count public holidays within requested leave spans as deducted days (BR-04)</span>
+                <span>Count public holidays within requested leave spans as deducted days</span>
               </label>
             </div>
           </GlassCard>
@@ -187,7 +187,7 @@ export const OrgConfig = () => {
                   onChange={(e) => handleChange('sla_period_days', e.target.value)}
                 />
                 <small style={{ color: 'var(--text-subtle)', fontSize: '11.5px', marginTop: '4px', display: 'block' }}>
-                  Default: 1 days. Reminder at 75%, escalation on breach (BR-33).
+                  Default: 1 days. Reminder at 75%, escalation on breach.
                 </small>
               </div>
 
@@ -202,7 +202,7 @@ export const OrgConfig = () => {
                   onChange={(e) => handleChange('backdating_window_days', e.target.value)}
                 />
                 <small style={{ color: 'var(--text-subtle)', fontSize: '11.5px', marginTop: '4px', display: 'block' }}>
-                  Default: 30 days. Capped at current leave year start (BR-27).
+                  Default: 30 days. Capped at current leave year start.
                 </small>
               </div>
 
@@ -217,7 +217,7 @@ export const OrgConfig = () => {
                   onChange={(e) => handleChange('sick_alert_threshold_days', e.target.value)}
                 />
                 <small style={{ color: 'var(--text-subtle)', fontSize: '11.5px', marginTop: '4px', display: 'block' }}>
-                  Alerts supervisor & HR if contiguous sick leave exceeds this (BR-43).
+                  Alerts supervisor & HR if contiguous sick leave exceeds this.
                 </small>
               </div>
             </div>

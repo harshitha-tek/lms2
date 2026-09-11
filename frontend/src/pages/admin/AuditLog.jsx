@@ -30,7 +30,7 @@ export const AuditLog = () => {
         <div>
           <h1 style={{ fontSize: '24px', fontWeight: 800 }}>System Audit Trail</h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>
-            Immutable, append-only audit trail capturing all state transitions, approvals, configuration modifications, and administrative actions (LMS-079/080).
+            Immutable, append-only audit trail capturing all state transitions, approvals, configuration modifications, and administrative actions.
           </p>
         </div>
 

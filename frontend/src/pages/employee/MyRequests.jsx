@@ -239,7 +239,7 @@ export const MyRequests = () => {
                               }}
                               className="btn-glass"
                               style={{ padding: '6px 12px', fontSize: '12px', borderColor: '#f59e0b', color: '#fbbf24' }}
-                              title="Request cancellation for approved leave (requires manager approval per BR-30)"
+                              title="Request cancellation for approved leave (requires manager approval)"
                             >
                               <i className="bi bi-arrow-counterclockwise" />
                               <span>Cancel Leave</span>
@@ -302,7 +302,7 @@ export const MyRequests = () => {
             {detailData.watchers && detailData.watchers.length > 0 && (
               <div>
                 <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                  Watchers with Visibility (LMS-065)
+                  Watchers with Visibility
                 </span>
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '8px' }}>
                   {detailData.watchers.map((w, idx) => (
@@ -375,7 +375,7 @@ export const MyRequests = () => {
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <p style={{ fontSize: '14px', color: 'var(--text-muted)' }}>
-            Per LMS policy (BR-30), cancellation of an approved leave requires manager approval.
+            Cancellation of an approved leave requires manager approval.
             The leave remains approved and deductions remain in force until your manager approves this request.
           </p>
           <div style={{ padding: '12px 14px', borderRadius: 'var(--radius-sm)', background: 'rgba(245, 158, 11, 0.15)', border: '1px solid rgba(245, 158, 11, 0.4)', color: '#fbbf24', fontSize: '13px' }}>

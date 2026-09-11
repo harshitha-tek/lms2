@@ -141,7 +141,7 @@ export const HolidayAdmin = () => {
         <div>
           <h1 style={{ fontSize: '24px', fontWeight: 800 }}>Holiday Calendar Administration</h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>
-            Maintain dated, named public holidays for the current and next leave year (LMS-028).
+            Maintain dated, named public holidays for the current and next leave year.
           </p>
         </div>
 

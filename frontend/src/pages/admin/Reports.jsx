@@ -19,7 +19,7 @@ export const Reports = () => {
       <div>
         <h1 style={{ fontSize: '24px', fontWeight: 800 }}>Reports & Analytics</h1>
         <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>
-          Leave utilization statistics and dedicated downstream Loss of Pay (LOP) payroll integration report (LMS-078).
+          Leave utilization statistics and a dedicated downstream Loss of Pay (LOP) payroll integration report.
         </p>
       </div>
 
@@ -37,7 +37,7 @@ export const Reports = () => {
       </div>
 
       {/* Loss of Pay (LOP) Downstream Payroll Report */}
-      <GlassCard title="Loss of Pay (LOP) Payroll Report (LMS-078)" icon="receipt-cutoff">
+      <GlassCard title="Loss of Pay (LOP) Payroll Report" icon="receipt-cutoff">
         <p style={{ color: 'var(--text-muted)', fontSize: '13px', marginBottom: '16px' }}>
           Listing of all unapproved advance absences converted to Loss of Pay for salary computation and payroll deductions.
         </p>
