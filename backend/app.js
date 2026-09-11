@@ -7,7 +7,6 @@ const config = require('./config/env');
 require('./database/db'); // ensures schema+seed exist before anything else runs
 
 const authRoutes = require('./routes/authRoutes');
-const Notification = require('./models/notificationModel');
 const scheduler = require('./services/schedulerService');
 const apiRoutes = require('./routes/apiRoutes');
 
@@ -24,21 +23,9 @@ app.use(session({
 }));
 app.use(express.static(path.join(__dirname, '..', 'frontend', 'public')));
 app.use('/api', apiRoutes);
-// Microsoft Entra redirects are server-side OpenID Connect flows, so retain
-// these two callback routes while the browser UI itself is React.
+// Microsoft Entra sign-in is a server-side OpenID Connect redirect flow, so
+// /auth/login and /auth/callback stay server-side even though the UI is React.
 app.use('/auth', authRoutes);
-
-// Expose unread notification count + auth mode to every authenticated view.
-app.use((req, res, next) => {
-  res.locals.authMode = config.authMode;
-  res.locals.currentPath = req.path;
-  res.locals.notifications = [];
-  if (req.session.userId) {
-    res.locals.unreadCount = Notification.unreadCount(req.session.userId);
-    res.locals.notifications = Notification.forUser(req.session.userId).slice(0, 5);
-  }
-  next();
-});
 
 const clientBuild = path.join(__dirname, '..', 'frontend', 'dist');
 app.use(express.static(clientBuild));
@@ -51,7 +38,6 @@ app.get('*', (req, res, next) => {
 
 app.use((err, req, res, next) => {
   console.error(err);
-  if (req.path.startsWith('/api/')) return res.status(500).json({ error: err.message });
   res.status(500).json({ error: err.message });
 });
 

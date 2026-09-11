@@ -24,6 +24,18 @@ export const EmployeeAdmin = () => {
     employee_type: 'EMPLOYEE',
   });
 
+  // Edit Employee State
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editingEmployee, setEditingEmployee] = useState(null);
+  const [editForm, setEditForm] = useState({
+    full_name: '',
+    email: '',
+    department_id: '',
+    grade_id: '',
+    management_level_id: '',
+    manager_id: '',
+  });
+
   const fetchEmployees = () => {
     setLoading(true);
     api('/admin/employees')
@@ -58,6 +70,37 @@ export const EmployeeAdmin = () => {
       fetchEmployees();
     } catch (err) {
       alert(err.message || 'Failed to create employee');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleEditClick = (emp) => {
+    setEditingEmployee(emp);
+    setEditForm({
+      full_name: emp.full_name,
+      email: emp.email,
+      department_id: emp.department_id,
+      grade_id: emp.grade_id,
+      management_level_id: emp.management_level_id,
+      manager_id: emp.manager_id || '',
+    });
+    setEditModalOpen(true);
+  };
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      await api(`/admin/employees/${editingEmployee.user_id}`, {
+        method: 'PUT',
+        body: JSON.stringify(editForm),
+      });
+      setEditModalOpen(false);
+      setEditingEmployee(null);
+      fetchEmployees();
+    } catch (err) {
+      alert(err.message || 'Failed to update employee');
     } finally {
       setSubmitting(false);
     }
@@ -141,6 +184,7 @@ export const EmployeeAdmin = () => {
                   <th>Role</th>
                   <th>Joined Date</th>
                   <th>Status</th>
+                  <th style={{ textAlign: 'center' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -171,6 +215,16 @@ export const EmployeeAdmin = () => {
                       <span style={{ color: emp.is_active ? '#34d399' : '#f87171', fontSize: '12px', fontWeight: 600 }}>
                         {emp.is_active ? 'Active' : 'Inactive'}
                       </span>
+                    </td>
+                    <td style={{ textAlign: 'center' }}>
+                      <button
+                        onClick={() => handleEditClick(emp)}
+                        className="btn-glass"
+                        style={{ padding: '4px 10px', fontSize: '12px' }}
+                        title="Edit employee details"
+                      >
+                        <i className="bi bi-pencil-square" />
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -277,7 +331,7 @@ export const EmployeeAdmin = () => {
                 onChange={(e) => setForm({ ...form, manager_id: e.target.value })}
               >
                 <option value="">None (Top-level)</option>
-                {data.employees.map((u) => (
+                {data.employees.filter((u) => u.isManager).map((u) => (
                   <option key={u.user_id} value={u.user_id}>
                     {u.full_name} ({u.employee_code})
                   </option>
@@ -312,6 +366,128 @@ export const EmployeeAdmin = () => {
             </button>
             <button type="submit" disabled={submitting} className="btn-glass btn-primary-glass">
               {submitting ? 'Creating...' : 'Create Employee Record'}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Edit Employee Modal */}
+      <Modal
+        isOpen={editModalOpen}
+        onClose={() => setEditModalOpen(false)}
+        title={`Edit Employee: ${editingEmployee?.full_name}`}
+        maxWidth="650px"
+      >
+        <form onSubmit={handleEditSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px' }}>
+                Full Name *
+              </label>
+              <input
+                type="text"
+                className="glass-input"
+                value={editForm.full_name}
+                onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })}
+                required
+              />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px' }}>
+                Work Email *
+              </label>
+              <input
+                type="email"
+                className="glass-input"
+                value={editForm.email}
+                onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                required
+              />
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px' }}>
+                Department *
+              </label>
+              <select
+                className="glass-select"
+                value={editForm.department_id}
+                onChange={(e) => setEditForm({ ...editForm, department_id: e.target.value })}
+              >
+                {data.departments.map((d) => (
+                  <option key={d.department_id} value={d.department_id}>
+                    {d.department_name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px' }}>
+                Grade
+              </label>
+              <select
+                className="glass-select"
+                value={editForm.grade_id}
+                onChange={(e) => setEditForm({ ...editForm, grade_id: e.target.value })}
+              >
+                <option value="">None</option>
+                {data.grades.map((g) => (
+                  <option key={g.grade_id} value={g.grade_id}>
+                    {g.grade_name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px' }}>
+                Management Level
+              </label>
+              <select
+                className="glass-select"
+                value={editForm.management_level_id}
+                onChange={(e) => setEditForm({ ...editForm, management_level_id: e.target.value })}
+              >
+                <option value="">None</option>
+                {data.managementLevels.map((m) => (
+                  <option key={m.level_id} value={m.level_id}>
+                    {m.level_name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px' }}>
+                Reporting Manager
+              </label>
+              <select
+                className="glass-select"
+                value={editForm.manager_id}
+                onChange={(e) => setEditForm({ ...editForm, manager_id: e.target.value })}
+              >
+                <option value="">None (Top-level)</option>
+                {data.employees.filter((u) => u.isManager).map((u) => (
+                  <option key={u.user_id} value={u.user_id}>
+                    {u.full_name} ({u.employee_code})
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>
+            <button type="button" onClick={() => setEditModalOpen(false)} className="btn-glass">
+              Cancel
+            </button>
+            <button type="submit" disabled={submitting} className="btn-glass btn-primary-glass">
+              {submitting ? 'Saving...' : 'Save Changes'}
             </button>
           </div>
         </form>

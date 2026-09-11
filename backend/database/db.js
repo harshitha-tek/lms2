@@ -15,7 +15,10 @@ function mysql(action, sql, params = []) {
 }
 
 function normalize(sql) {
-  return sql.replace(/datetime\('now'\)/gi, 'NOW()').replace(/INSERT OR IGNORE/gi, 'INSERT IGNORE');
+  return sql
+    .replace(/datetime\('now'\)/gi, 'NOW()')
+    .replace(/\bdate\('now'\)/gi, 'CURDATE()')
+    .replace(/INSERT OR IGNORE/gi, 'INSERT IGNORE');
 }
 
 const db = {

@@ -4,7 +4,6 @@
 // jobs are visible/demonstrable without waiting for real time to pass.
 const db = require('../database/db');
 const dayjs = require('dayjs');
-const Config = require('../models/configModel').Config;
 const Ledger = require('../models/ledgerModel');
 const LeaveRequest = require('../models/leaveRequestModel');
 const Notification = require('../models/notificationModel');
@@ -47,22 +46,84 @@ function runAccrual() {
   });
 }
 
-// BR-33 to BR-36: SLA reminder at 75%, escalation on breach, terminating at HR/Admin.
+// BR-33 to BR-36: escalation on SLA breach, one level up the reporting
+// hierarchy, terminating at the HR/Admin queue. The request stays in
+// PENDING_MANAGER (state machine: PENDING_MANAGER -> PENDING_MANAGER); only
+// the current approver is reassigned. A request is never auto-decided.
+const SLA_TEST_WINDOW_MINUTES = 2; // shortened for demo; production uses Config.slaPeriodDays()
+
+function hrAdminIds() {
+  return db.prepare(`
+    SELECT ur.user_id FROM user_roles ur
+    JOIN roles r ON r.role_id = ur.role_id
+    JOIN users u ON u.user_id = ur.user_id
+    WHERE r.role_code = 'HR_ADMIN' AND u.is_active = 1
+  `).all().map(row => row.user_id);
+}
+
 function runSlaEscalation() {
-  const slaDays = Config.slaPeriodDays();
-  const cutoff = dayjs().subtract(slaDays, 'day').toISOString();
-  return runIdempotent('SLA_ESCALATION', `SLA:${dayjs().format('YYYY-MM-DD-HH')}`, () => {
+  const cutoff = dayjs().subtract(SLA_TEST_WINDOW_MINUTES, 'minute').format('YYYY-MM-DD HH:mm:ss');
+  return runIdempotent('SLA_ESCALATION', `SLA:${dayjs().format('YYYY-MM-DD-HH-mm')}`, () => {
     const breached = db.prepare(`
-      SELECT la.*, lr.request_number FROM leave_approvals la
+      SELECT la.*, lr.request_number, lr.employee_id
+      FROM leave_approvals la
       JOIN leave_requests lr ON lr.leave_request_id = la.leave_request_id
-      WHERE la.is_current = 1 AND la.status = 'PENDING' AND la.created_at < ?
+      WHERE la.is_current = 1 AND la.status = 'PENDING'
+        AND la.approval_level = 'MANAGER' AND lr.status = 'PENDING_MANAGER'
+        AND la.created_at < ?
     `).all(cutoff);
+
+    const hrIds = hrAdminIds();
+    let escalated = 0;
+
     for (const a of breached) {
-      Notification.create(a.approver_id, 'NEW_REQUEST_FOR_APPROVAL',
-        `SLA breached: ${a.request_number}`, `Request ${a.request_number} has breached its SLA and remains actionable.`);
-      Audit.log(null, 'leave_approvals', a.approval_id, 'SLA_BREACH_NOTICE', null, null, true);
+      // Walk one level up from the CURRENT approver, skipping the employee.
+      const currentApprover = db.prepare(`SELECT user_id, manager_id FROM users WHERE user_id = ?`).get(a.approver_id);
+      let nextApproverId = currentApprover ? currentApprover.manager_id : null;
+      if (nextApproverId === a.employee_id) {
+        const up = db.prepare(`SELECT manager_id FROM users WHERE user_id = ?`).get(nextApproverId);
+        nextApproverId = up ? up.manager_id : null;
+      }
+
+      // Retire the breached approval first so it can never stay "current".
+      db.prepare(`UPDATE leave_approvals SET is_current = 0 WHERE approval_id = ?`).run(a.approval_id);
+
+      const seq = (a.reassignment_seq || 0) + 1;
+      const recipients = [];
+
+      if (nextApproverId) {
+        db.prepare(`
+          INSERT INTO leave_approvals
+            (leave_request_id, approval_level, reassignment_seq, approver_id, escalated_from_approval_id, is_current, status)
+          VALUES (?, 'MANAGER', ?, ?, ?, 1, 'PENDING')
+        `).run(a.leave_request_id, seq, nextApproverId, a.approval_id);
+        recipients.push(nextApproverId);
+      } else {
+        // Hierarchy exhausted -> HR/Admin queue (BR-36).
+        for (const hrId of hrIds) {
+          db.prepare(`
+            INSERT INTO leave_approvals
+              (leave_request_id, approval_level, reassignment_seq, approver_id, escalated_from_approval_id, is_current, status)
+            VALUES (?, 'HR', ?, ?, ?, 1, 'PENDING')
+          `).run(a.leave_request_id, seq, hrId, a.approval_id);
+          recipients.push(hrId);
+        }
+      }
+
+      for (const rid of recipients) {
+        Notification.create(rid, 'NEW_REQUEST_FOR_APPROVAL', `Escalated: ${a.request_number}`,
+          `${a.request_number} breached its approval SLA and was escalated to you.`, a.leave_request_id);
+      }
+      // BR-35: the original approver is notified.
+      Notification.create(a.approver_id, 'REQUEST_ESCALATED', `Escalated away: ${a.request_number}`,
+        `${a.request_number} was pending with you past the SLA and has been escalated.`, a.leave_request_id);
+
+      Audit.log(null, 'leave_approvals', a.approval_id, 'SLA_ESCALATION',
+        { is_current: 1, approver_id: a.approver_id },
+        { is_current: 0, escalated_to: nextApproverId || hrIds }, true);
+      escalated++;
     }
-    return { notified: breached.length };
+    return { escalated };
   });
 }
 

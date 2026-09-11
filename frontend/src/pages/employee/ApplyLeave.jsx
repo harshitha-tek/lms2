@@ -153,6 +153,7 @@ export const ApplyLeave = () => {
                   type="date"
                   className="glass-input"
                   value={startDate}
+                  min={new Date().toISOString().split('T')[0]}
                   onChange={(e) => {
                     setStartDate(e.target.value);
                     if (!endDate || endDate < e.target.value) setEndDate(e.target.value);
@@ -169,7 +170,7 @@ export const ApplyLeave = () => {
                   type="date"
                   className="glass-input"
                   value={endDate}
-                  min={startDate}
+                  min={startDate || new Date().toISOString().split('T')[0]}
                   onChange={(e) => setEndDate(e.target.value)}
                   required
                 />

@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ProfileModal } from './ProfileModal';
 import { useAuth } from '../../context/AuthContext';
 import { Link } from 'react-router-dom';
 
@@ -13,10 +12,9 @@ const useClickOutside = (ref, handler) => {
 };
 
 export const Topbar = ({ toggleMobile }) => {
-  const { user, availableUsers, signIn, notifications, unreadCount, markNotificationRead, updateUser } = useAuth();
+  const { user, availableUsers, signIn, notifications, unreadCount, markNotificationRead } = useAuth();
   const [showNotifs, setShowNotifs] = useState(false);
   const [showUserSwitcher, setShowUserSwitcher] = useState(false);
-  const [profileOpen, setProfileOpen] = useState(false);
 
   const notifRef = useRef(null);
   const switcherRef = useRef(null);
@@ -283,7 +281,8 @@ export const Topbar = ({ toggleMobile }) => {
         </div>
 
         {/* ── User Pill ── */}
-        <div
+        <Link
+          to="/profile"
           className="glass-panel"
           style={{
             display: 'flex',
@@ -293,8 +292,10 @@ export const Topbar = ({ toggleMobile }) => {
             borderRadius: 'var(--radius-full)',
             background: 'rgba(255,255,255,0.06)',
             cursor: 'pointer',
+            textDecoration: 'none',
+            color: 'inherit',
           }}
-          onClick={() => setProfileOpen(true)}
+          title="View your profile & settings"
         >
           <div
             style={{
@@ -317,10 +318,8 @@ export const Topbar = ({ toggleMobile }) => {
             <div style={{ fontSize: '12.5px', fontWeight: 600 }}>{user.full_name}</div>
             <div style={{ fontSize: '10.5px', color: 'var(--text-subtle)' }}>{user.email}</div>
           </div>
-        </div>
+        </Link>
       </div>
-
-      <ProfileModal isOpen={profileOpen} onClose={() => setProfileOpen(false)} />
     </header>
   );
 };

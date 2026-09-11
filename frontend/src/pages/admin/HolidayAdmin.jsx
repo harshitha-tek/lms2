@@ -15,6 +15,11 @@ export const HolidayAdmin = () => {
     holiday_type: 'NATIONAL',
   });
 
+  // CSV Import Modal
+  const [csvModalOpen, setCsvModalOpen] = useState(false);
+  const [csvText, setCsvText] = useState('');
+  const [csvFeedback, setCsvFeedback] = useState(null);
+
   const fetchHolidays = () => {
     setLoading(true);
     api('/holidays')
@@ -45,6 +50,81 @@ export const HolidayAdmin = () => {
     }
   };
 
+  const handleCsvImport = async () => {
+    if (!csvText.trim()) {
+      alert('Please paste or upload CSV data first.');
+      return;
+    }
+    const lines = csvText.trim().split(/\r?\n/).filter((l) => l.trim().length > 0);
+    if (lines.length <= 1) {
+      alert('CSV must contain a header row and at least one data row.');
+      return;
+    }
+
+    const headers = lines[0].split(',').map((h) => h.trim().toLowerCase());
+    const rows = [];
+    for (let i = 1; i < lines.length; i++) {
+      const parts = lines[i].split(',').map((p) => p.trim());
+      if (parts.length < 2) continue;
+      const row = {};
+      headers.forEach((h, idx) => {
+        row[h] = parts[idx];
+      });
+      rows.push(row);
+    }
+
+    setSubmitting(true);
+    setCsvFeedback(null);
+    try {
+      const res = await api('/admin/holidays/import', {
+        method: 'POST',
+        body: JSON.stringify({ rows }),
+      });
+      const skipped = res.skipped
+        ? ` ${res.skipped} row(s) skipped: ${(res.errors || []).slice(0, 3).join('; ')}`
+        : '';
+      setCsvFeedback(`Imported ${res.imported} holiday(s).${skipped}`);
+      fetchHolidays();
+      if (!res.skipped) {
+        setTimeout(() => {
+          setCsvModalOpen(false);
+          setCsvFeedback(null);
+          setCsvText('');
+        }, 1500);
+      }
+    } catch (err) {
+      alert(err.message || 'Failed to import CSV');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setCsvText(event.target.result);
+    };
+    reader.readAsText(file);
+  };
+
+  const downloadSampleCsv = () => {
+    const sample = `holiday_date,holiday_name,holiday_type
+2026-01-01,New Year's Day,NATIONAL
+2026-01-26,Republic Day,NATIONAL
+2026-03-06,Holi,FESTIVAL
+2026-10-20,Optional Regional Holiday,OPTIONAL`;
+    const blob = new Blob([sample], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'holiday_calendar_template.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to remove this holiday?')) return;
     try {
@@ -65,10 +145,16 @@ export const HolidayAdmin = () => {
           </p>
         </div>
 
-        <button onClick={() => setModalOpen(true)} className="btn-glass btn-primary-glass">
-          <i className="bi bi-calendar-plus" />
-          <span>Add Public Holiday</span>
-        </button>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <button onClick={() => setCsvModalOpen(true)} className="btn-glass">
+            <i className="bi bi-filetype-csv" />
+            <span>Import CSV</span>
+          </button>
+          <button onClick={() => setModalOpen(true)} className="btn-glass btn-primary-glass">
+            <i className="bi bi-calendar-plus" />
+            <span>Add Public Holiday</span>
+          </button>
+        </div>
       </div>
 
       <GlassCard style={{ padding: 0, overflow: 'hidden' }}>
@@ -184,6 +270,63 @@ export const HolidayAdmin = () => {
             </button>
           </div>
         </form>
+      </Modal>
+
+      {/* Import Holidays from CSV */}
+      <Modal
+        isOpen={csvModalOpen}
+        onClose={() => setCsvModalOpen(false)}
+        title="Import Holiday Calendar from CSV"
+        maxWidth="600px"
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0 }}>
+            Columns: <code>holiday_date</code> (YYYY-MM-DD), <code>holiday_name</code>, <code>holiday_type</code>
+            (NATIONAL, FESTIVAL or OPTIONAL). Rows with a date that already exists are skipped.
+          </p>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <label className="btn-glass" style={{ cursor: 'pointer', fontSize: '12.5px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+              <i className="bi bi-upload" />
+              <span>Choose CSV File</span>
+              <input type="file" accept=".csv" onChange={handleFileUpload} style={{ display: 'none' }} />
+            </label>
+
+            <button onClick={downloadSampleCsv} className="btn-glass" style={{ fontSize: '12px', color: 'var(--primary)' }}>
+              <i className="bi bi-download" style={{ marginRight: '5px' }} /> Download Template
+            </button>
+          </div>
+
+          <div>
+            <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-main)', display: 'block', marginBottom: '4px' }}>
+              Or Paste CSV Data Directly:
+            </label>
+            <textarea
+              rows={7}
+              className="input-glass"
+              value={csvText}
+              onChange={(e) => setCsvText(e.target.value)}
+              placeholder={'holiday_date,holiday_name,holiday_type\n2026-01-26,Republic Day,NATIONAL'}
+              style={{ width: '100%', fontFamily: 'monospace', fontSize: '12px' }}
+            />
+          </div>
+
+          {csvFeedback && (
+            <div style={{ padding: '10px', borderRadius: 'var(--radius-sm)', background: 'rgba(5,150,105,0.15)', color: '#059669', fontSize: '13px', fontWeight: 600 }}>
+              <i className="bi bi-check-circle-fill" style={{ marginRight: '6px' }} />
+              {csvFeedback}
+            </div>
+          )}
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '6px' }}>
+            <button type="button" onClick={() => setCsvModalOpen(false)} className="btn-glass">
+              Close
+            </button>
+            <button type="button" onClick={handleCsvImport} disabled={submitting} className="btn-glass btn-primary-glass">
+              {submitting ? 'Importing...' : 'Run CSV Import'}
+            </button>
+          </div>
+        </div>
       </Modal>
     </div>
   );

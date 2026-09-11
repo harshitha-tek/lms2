@@ -53,6 +53,10 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const updateUser = (patch) => {
+    setUser(prev => (prev ? { ...prev, ...patch } : prev));
+  };
+
   const signOut = async () => {
     setLoading(true);
     try {
@@ -90,6 +94,7 @@ export const AuthProvider = ({ children }) => {
         withdrawalRequests,
         signIn,
         signOut,
+        updateUser,
         refreshSession,
         markNotificationRead,
       }}

@@ -18,18 +18,4 @@ function ensureAuthenticated(req, res, next) {
   next();
 }
 
-function requireManager(req, res, next) {
-  if (!req.currentUser.isManager) {
-    return res.status(403).render('error', { title: 'Access denied', message: 'Manager access is required for this page.' });
-  }
-  next();
-}
-
-function requireHrAdmin(req, res, next) {
-  if (!req.currentUser.isHrAdmin) {
-    return res.status(403).render('error', { title: 'Access denied', message: 'HR/Admin access is required for this page.' });
-  }
-  next();
-}
-
-module.exports = { ensureAuthenticated, requireManager, requireHrAdmin };
+module.exports = { ensureAuthenticated };

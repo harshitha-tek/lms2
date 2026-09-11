@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../../services/api';
-import Modal from '../../components/common/Modal';
+import { Modal } from '../../components/common/Modal';
 import { GlassCard } from '../../components/common/GlassCard';
 
 const PAGE_SIZE = 8;
@@ -101,7 +101,7 @@ export const Departments = () => {
         )}
       </GlassCard>
       {showModal && (
-        <Modal title="Create Department" onClose={() => setShowModal(false)}>
+        <Modal isOpen={showModal} title="Create Department" onClose={() => setShowModal(false)}>
           <form onSubmit={handleCreate}>
             <div className="form-group" style={{ marginBottom: '8px' }}>
               <label>Code</label>
