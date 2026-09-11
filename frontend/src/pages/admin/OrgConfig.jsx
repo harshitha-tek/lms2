@@ -13,7 +13,13 @@ export const OrgConfig = () => {
     setLoading(true);
     api('/admin/configuration')
       .then((res) => {
-        setConfigs(res.configs || {});
+        // The API returns configuration rows as an array; key them by
+        // configuration_key so configs.sla_period_days etc. resolve to the
+        // actual stored value instead of always falling through to the
+        // hardcoded per-field defaults below.
+        const map = {};
+        (res.configs || []).forEach((c) => { map[c.configuration_key] = c.configuration_value; });
+        setConfigs(map);
       })
       .catch(console.error)
       .finally(() => setLoading(false));
