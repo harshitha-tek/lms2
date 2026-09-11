@@ -161,25 +161,50 @@ router.post('/leave/requests/:id/cancel', (req, res) => {
   res.json({ success: true, message: 'Cancellation requested.' });
 });
 
-router.get('/leave/peer-calendar', (req, res) => {
-  const peers = req.currentUser.manager_id ? User.peers(req.currentUser.user_id) : [];
-  const peerIds = peers.map(p => p.user_id);
-  if (!peerIds.length) return res.json({ events: [] });
-  const placeholders = peerIds.map(() => '?').join(',');
+// Team calendar: an Employee sees their peers (BR-41 — name, dates, status
+// only, never leave type/reason); a Manager or HR/Admin sees their full
+// reporting line at any depth (BR-39). Only APPROVED leave is shown — a
+// pending request isn't real team-coverage impact yet.
+router.get('/leave/team-calendar', (req, res) => {
+  const members = req.currentUser.isHrAdmin
+    ? User.allActive().filter(u => u.user_id !== req.currentUser.user_id)
+    : req.currentUser.isManager
+      ? User.allReportsRecursive(req.currentUser.user_id)
+      : User.peers(req.currentUser.user_id);
+  const memberIds = members.map(m => m.user_id);
+  if (!memberIds.length) return res.json({ events: [], members: [] });
+  const placeholders = memberIds.map(() => '?').join(',');
   const leaves = db.prepare(`
     SELECT lr.leave_request_id, lr.employee_id, u.full_name, lr.start_date, lr.end_date, lr.status
     FROM leave_requests lr
     JOIN users u ON u.user_id = lr.employee_id
-    WHERE lr.employee_id IN (${placeholders}) AND lr.status IN ('APPROVED', 'PENDING_MANAGER', 'PENDING_HR')
+    WHERE lr.employee_id IN (${placeholders}) AND lr.status = 'APPROVED'
+  `).all(...memberIds);
+  res.json({
+    members: members.map(m => ({ user_id: m.user_id, full_name: m.full_name })),
+    events: leaves.map(l => ({
+      id: l.leave_request_id,
+      employeeId: l.employee_id,
+      employeeName: l.full_name,
+      start: l.start_date,
+      end: l.end_date,
+      status: l.status,
+    })),
+  });
+});
+// Deprecated alias, kept so any stale cached bundle doesn't hard-break.
+router.get('/leave/peer-calendar', (req, res) => {
+  const peers = User.peers(req.currentUser.user_id);
+  const peerIds = peers.map(p => p.user_id);
+  if (!peerIds.length) return res.json({ events: [] });
+  const placeholders = peerIds.map(() => '?').join(',');
+  const leaves = db.prepare(`
+    SELECT lr.leave_request_id, u.full_name, lr.start_date, lr.end_date, lr.status
+    FROM leave_requests lr
+    JOIN users u ON u.user_id = lr.employee_id
+    WHERE lr.employee_id IN (${placeholders}) AND lr.status = 'APPROVED'
   `).all(...peerIds);
-  res.json({ events: leaves.map(l => ({
-    id: l.leave_request_id,
-    title: `${l.full_name} (${l.status === 'APPROVED' ? 'On Leave' : 'Pending'})`,
-    start: l.start_date,
-    end: l.end_date,
-    employeeName: l.full_name,
-    status: l.status,
-  })) });
+  res.json({ events: leaves.map(l => ({ id: l.leave_request_id, employeeName: l.full_name, start: l.start_date, end: l.end_date, status: l.status })) });
 });
 
 // Manager: Approvals Queue
