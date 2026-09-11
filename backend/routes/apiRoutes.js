@@ -799,7 +799,7 @@ router.delete('/admin/notification-templates/:id', (req, res) => {
 router.get('/admin/delegations', (req, res) => {
   if (!req.currentUser.isHrAdmin) return res.status(403).json({ error: 'HR/Admin required.' });
   const delegations = db.prepare(`
-    SELECT d.*, 
+    SELECT d.*,
       m.full_name AS manager_name, m.email AS manager_email, m.employee_code AS manager_code,
       del.full_name AS delegate_name, del.email AS delegate_email, del.employee_code AS delegate_code
     FROM delegations d
@@ -808,14 +808,21 @@ router.get('/admin/delegations', (req, res) => {
     ORDER BY d.effective_from DESC
   `).all();
 
-  const managers = db.prepare(`
-    SELECT DISTINCT u.user_id, u.full_name, u.email, u.employee_code, u.manager_id
-    FROM users u
-    WHERE u.is_active = 1
-    ORDER BY u.full_name
-  `).all();
+  // Only an actual Manager (or HR/Admin) has an approval queue to delegate in the first place.
+  const managers = User.allActive().filter(u => u.isManager || u.isHrAdmin);
 
-  res.json({ delegations, managers, allUsers: User.allActive() });
+  res.json({ delegations, managers });
+});
+
+// Eligible delegates for a specific manager: peer Managers reporting to the
+// same supervisor, or — where no peer manager exists — that manager's own
+// supervisor (LMS-041). Fetched dynamically as HR/Admin picks the nominating
+// manager, since the eligible set differs per manager.
+router.get('/admin/delegations/eligible-delegates', (req, res) => {
+  if (!req.currentUser.isHrAdmin) return res.status(403).json({ error: 'HR/Admin required.' });
+  const managerId = Number(req.query.manager_id);
+  if (!managerId || !User.findById(managerId)) return res.status(400).json({ error: 'A valid manager_id is required.' });
+  res.json({ eligibleDelegates: eligibleDelegatesFor(managerId) });
 });
 
 router.post('/admin/delegations', (req, res) => {
@@ -824,14 +831,20 @@ router.post('/admin/delegations', (req, res) => {
   if (!manager_id || !delegate_id || !effective_from) {
     return res.status(400).json({ error: 'Manager, delegate, and start date are required.' });
   }
-  if (Number(manager_id) === Number(delegate_id)) {
+  const managerId = Number(manager_id);
+  const delegateId = Number(delegate_id);
+  if (managerId === delegateId) {
     return res.status(400).json({ error: 'Manager cannot delegate approval rights to themselves (self-approval prohibited).' });
+  }
+  const eligible = eligibleDelegatesFor(managerId);
+  if (!eligible.some(u => u.user_id === delegateId)) {
+    return res.status(400).json({ error: "The delegate must be a peer Manager reporting to the same supervisor, or the manager's own supervisor where no peer manager exists." });
   }
 
   const info = db.prepare('INSERT INTO delegations (manager_id, delegate_id, effective_from, effective_to) VALUES (?, ?, ?, ?)')
-    .run(manager_id, delegate_id, effective_from, effective_to || null);
+    .run(managerId, delegateId, effective_from, effective_to || null);
 
-  Audit.log(req.currentUser.user_id, 'delegations', info.lastInsertRowid, 'DELEGATION_CREATED_BY_ADMIN', null, { manager_id, delegate_id, effective_from, effective_to });
+  Audit.log(req.currentUser.user_id, 'delegations', info.lastInsertRowid, 'DELEGATION_CREATED_BY_ADMIN', null, { manager_id: managerId, delegate_id: delegateId, effective_from, effective_to });
   res.status(201).json({ success: true, id: info.lastInsertRowid });
 });
 

@@ -6,7 +6,6 @@ import { Modal } from '../../components/common/Modal';
 export const AdminDelegations = () => {
   const [delegations, setDelegations] = useState([]);
   const [managers, setManagers] = useState([]);
-  const [allUsers, setAllUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterTab, setFilterTab] = useState('ALL'); // 'ALL' | 'ACTIVE' | 'SCHEDULED' | 'PAST'
 
@@ -18,6 +17,12 @@ export const AdminDelegations = () => {
     effective_to: '',
   });
 
+  // Eligible delegates for the currently-selected Nominating Manager: peer
+  // Managers reporting to the same supervisor, or — where none exist — that
+  // manager's own supervisor (LMS-041). Refetched whenever manager_id changes.
+  const [eligibleDelegates, setEligibleDelegates] = useState([]);
+  const [loadingDelegates, setLoadingDelegates] = useState(false);
+
   const [submitting, setSubmitting] = useState(false);
 
   const fetchDelegations = async () => {
@@ -26,7 +31,6 @@ export const AdminDelegations = () => {
       const res = await api('/admin/delegations');
       setDelegations(res.delegations || []);
       setManagers(res.managers || []);
-      setAllUsers(res.allUsers || []);
       if (res.managers && res.managers.length > 0) {
         setForm((prev) => ({ ...prev, manager_id: res.managers[0].user_id }));
       }
@@ -40,6 +44,20 @@ export const AdminDelegations = () => {
   useEffect(() => {
     fetchDelegations();
   }, []);
+
+  useEffect(() => {
+    if (!form.manager_id) { setEligibleDelegates([]); return; }
+    setLoadingDelegates(true);
+    setForm((prev) => ({ ...prev, delegate_id: '' }));
+    api(`/admin/delegations/eligible-delegates?manager_id=${form.manager_id}`)
+      .then((res) => {
+        const eligible = res.eligibleDelegates || [];
+        setEligibleDelegates(eligible);
+        if (eligible.length) setForm((prev) => ({ ...prev, delegate_id: eligible[0].user_id }));
+      })
+      .catch(console.error)
+      .finally(() => setLoadingDelegates(false));
+  }, [form.manager_id]);
 
   const handleCreate = async (e) => {
     e.preventDefault();
@@ -393,22 +411,31 @@ export const AdminDelegations = () => {
             <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-main)', display: 'block', marginBottom: '4px' }}>
               Appointed Delegate *
             </label>
-            <select
-              className="input-glass"
-              required
-              value={form.delegate_id}
-              onChange={(e) => setForm({ ...form, delegate_id: e.target.value })}
-              style={{ width: '100%' }}
-            >
-              <option value="">-- Choose Delegate (Peer Manager or Supervisor) --</option>
-              {allUsers
-                .filter((u) => Number(u.user_id) !== Number(form.manager_id))
-                .map((u) => (
+            {loadingDelegates ? (
+              <div style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Loading eligible delegates...</div>
+            ) : eligibleDelegates.length === 0 ? (
+              <div style={{ color: '#f87171', fontSize: '13px' }}>
+                No eligible peer manager or supervisor found for this manager.
+              </div>
+            ) : (
+              <select
+                className="input-glass"
+                required
+                value={form.delegate_id}
+                onChange={(e) => setForm({ ...form, delegate_id: e.target.value })}
+                style={{ width: '100%' }}
+              >
+                {eligibleDelegates.map((u) => (
                   <option key={u.user_id} value={u.user_id}>
-                    {u.full_name} ({u.employee_type || 'Employee'}) - {u.email}
+                    {u.full_name} ({u.isHrAdmin ? 'HR/Admin' : 'Manager'}) - {u.email}
                   </option>
                 ))}
-            </select>
+              </select>
+            )}
+            <small style={{ color: 'var(--text-subtle)', fontSize: '11px', display: 'block', marginTop: '4px' }}>
+              Per LMS-041: only a peer Manager reporting to the same supervisor is eligible; where none
+              exists, the manager's own supervisor is offered instead.
+            </small>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
@@ -458,7 +485,7 @@ export const AdminDelegations = () => {
             <button type="button" onClick={() => setModalOpen(false)} className="btn-glass">
               Cancel
             </button>
-            <button type="submit" disabled={submitting} className="btn-glass btn-primary-glass">
+            <button type="submit" disabled={submitting || eligibleDelegates.length === 0} className="btn-glass btn-primary-glass">
               {submitting ? 'Creating...' : 'Confirm Delegation'}
             </button>
           </div>
