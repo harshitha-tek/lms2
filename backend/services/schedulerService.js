@@ -8,6 +8,7 @@ const Ledger = require('../models/ledgerModel');
 const LeaveRequest = require('../models/leaveRequestModel');
 const Notification = require('../models/notificationModel');
 const Audit = require('../models/auditModel');
+const { Config } = require('../models/configModel');
 
 function runIdempotent(jobName, executionKey, fn) {
   const existing = db.prepare(`SELECT * FROM scheduler_executions WHERE execution_key = ?`).get(executionKey);
@@ -50,7 +51,8 @@ function runAccrual() {
 // hierarchy, terminating at the HR/Admin queue. The request stays in
 // PENDING_MANAGER (state machine: PENDING_MANAGER -> PENDING_MANAGER); only
 // the current approver is reassigned. A request is never auto-decided.
-const SLA_TEST_WINDOW_MINUTES = 2; // shortened for demo; production uses Config.slaPeriodDays()
+// The SLA period itself is [CONFIG] per BR-33/LMS-029 — Config.slaPeriodDays()
+// — and must never be hard-coded here.
 
 function hrAdminIds() {
   return db.prepare(`
@@ -62,7 +64,7 @@ function hrAdminIds() {
 }
 
 function runSlaEscalation() {
-  const cutoff = dayjs().subtract(SLA_TEST_WINDOW_MINUTES, 'minute').format('YYYY-MM-DD HH:mm:ss');
+  const cutoff = dayjs().subtract(Config.slaPeriodDays(), 'day').format('YYYY-MM-DD HH:mm:ss');
   return runIdempotent('SLA_ESCALATION', `SLA:${dayjs().format('YYYY-MM-DD-HH-mm')}`, () => {
     const breached = db.prepare(`
       SELECT la.*, lr.request_number, lr.employee_id
