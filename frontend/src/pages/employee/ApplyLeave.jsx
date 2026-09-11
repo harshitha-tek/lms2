@@ -7,6 +7,7 @@ export const ApplyLeave = () => {
   const navigate = useNavigate();
   const [leaveTypes, setLeaveTypes] = useState([]);
   const [balances, setBalances] = useState([]);
+  const [minimumLeaveDate, setMinimumLeaveDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedType, setSelectedType] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -27,6 +28,7 @@ export const ApplyLeave = () => {
       .then((data) => {
         setLeaveTypes(data.leaveTypes || []);
         setBalances(data.balances || []);
+        if (data.minimumLeaveDate) setMinimumLeaveDate(data.minimumLeaveDate);
         if (data.leaveTypes && data.leaveTypes.length > 0) {
           setSelectedType(data.leaveTypes[0].leave_type_id);
         }
@@ -153,7 +155,7 @@ export const ApplyLeave = () => {
                   type="date"
                   className="glass-input"
                   value={startDate}
-                  min={new Date().toISOString().split('T')[0]}
+                  min={minimumLeaveDate}
                   onChange={(e) => {
                     setStartDate(e.target.value);
                     if (!endDate || endDate < e.target.value) setEndDate(e.target.value);
@@ -170,7 +172,7 @@ export const ApplyLeave = () => {
                   type="date"
                   className="glass-input"
                   value={endDate}
-                  min={startDate || new Date().toISOString().split('T')[0]}
+                  min={startDate || minimumLeaveDate}
                   onChange={(e) => setEndDate(e.target.value)}
                   required
                 />

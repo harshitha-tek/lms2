@@ -62,7 +62,8 @@ router.get('/dashboard', (req, res) => {
     pending: requests.filter(r => ['PENDING_MANAGER', 'PENDING_HR'].includes(r.status)),
     upcoming: requests.filter(r => r.status === 'APPROVED' && r.start_date >= today),
     upcomingHolidays,
-    minimumLeaveDate: today,
+    // BR-27: backdating is permitted within this window, not just today onward.
+    minimumLeaveDate: dayjs().subtract(Config.backdatingWindowDays(), 'day').format('YYYY-MM-DD'),
   });
 });
 
@@ -104,7 +105,14 @@ router.post('/leave/requests', upload.single('attachment'), (req, res) => {
   const { leave_type_id, start_date, end_date, is_half_day, half_day_part, reason, action } = req.body;
   const leaveType = LeaveType.findById(Number(leave_type_id));
   if (!leaveType || !start_date || !end_date || dayjs(end_date).isBefore(dayjs(start_date), 'day')) return res.status(400).json({ error: 'Choose a leave type and valid dates.' });
-  if (dayjs(start_date).isBefore(dayjs(), 'day') || !String(reason || '').trim()) return res.status(400).json({ error: 'A future start date and reason are required.' });
+  // BR-27/BR-28, LMS-039: backdating is permitted within the configured
+  // window (default 30 calendar days) — a start date is not required to be
+  // in the future, only not older than that window allows.
+  const earliestAllowed = dayjs().subtract(Config.backdatingWindowDays(), 'day');
+  if (dayjs(start_date).isBefore(earliestAllowed, 'day')) {
+    return res.status(400).json({ error: `Backdating is only permitted up to ${earliestAllowed.format('DD MMM YYYY')}.` });
+  }
+  if (!String(reason || '').trim()) return res.status(400).json({ error: 'A reason is required.' });
   if (leaveType.is_sick_leave && !req.file) return res.status(400).json({ error: 'An attachment is required for sick leave.' });
   if (LeaveRequest.overlapping(req.currentUser.user_id, start_date, end_date).length && action !== 'draft') return res.status(409).json({ error: 'This overlaps an existing request.' });
   const calculation = calcService.calculate(start_date, end_date, is_half_day === 'true');
