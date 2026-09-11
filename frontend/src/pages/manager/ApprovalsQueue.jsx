@@ -3,8 +3,10 @@ import { api } from '../../services/api';
 import { GlassCard } from '../../components/common/GlassCard';
 import { StatusBadge } from '../../components/common/StatusBadge';
 import { Modal } from '../../components/common/Modal';
+import { useAuth } from '../../context/AuthContext';
 
 export const ApprovalsQueue = () => {
+  const { user } = useAuth();
   const [data, setData] = useState({ pending: [], cancellations: [], slaDays: 3, longLeaveThreshold: 10 });
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('pending'); // 'pending' | 'cancellations'
@@ -77,12 +79,11 @@ export const ApprovalsQueue = () => {
     }
   };
 
-  const handleSelectAll = (e) => {
-    if (e.target.checked) {
-      setSelectedIds(data.pending.map((r) => r.leave_request_id));
-    } else {
-      setSelectedIds([]);
-    }
+  const handleSelectAllIn = (list, checked) => {
+    const ids = list.map((r) => r.leave_request_id);
+    setSelectedIds((prev) =>
+      checked ? Array.from(new Set([...prev, ...ids])) : prev.filter((id) => !ids.includes(id))
+    );
   };
 
   const toggleSelect = (id) => {
@@ -122,6 +123,147 @@ export const ApprovalsQueue = () => {
   };
 
   const items = activeTab === 'pending' ? data.pending : data.cancellations;
+  const ownPending = data.pending.filter((r) => r.approver_id === user?.user_id);
+  const delegatedPending = data.pending.filter((r) => r.approver_id !== user?.user_id);
+
+  const renderApprovalTable = (list, { isDelegated = false } = {}) => (
+    <div style={{ overflowX: 'auto' }}>
+      <table className="glass-table">
+        <thead>
+          <tr>
+            <th style={{ width: '40px' }}>
+              <input
+                type="checkbox"
+                checked={list.length > 0 && list.every((r) => selectedIds.includes(r.leave_request_id))}
+                onChange={(e) => handleSelectAllIn(list, e.target.checked)}
+                style={{ accentColor: '#3b82f6', width: '16px', height: '16px' }}
+              />
+            </th>
+            <th>Employee</th>
+            <th>Dates & Leave Type</th>
+            <th>Deducted</th>
+            <th>SLA Urgency</th>
+            <th>Compliance Flags</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {list.map((req) => {
+            const isLongLeave = req.deducted_days > data.longLeaveThreshold;
+            const isAdvance = req.is_advance_leave === 1;
+
+            return (
+              <tr key={req.leave_request_id}>
+                <td>
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.includes(req.leave_request_id)}
+                    onChange={() => toggleSelect(req.leave_request_id)}
+                    style={{ accentColor: '#3b82f6', width: '16px', height: '16px' }}
+                  />
+                </td>
+                <td>
+                  <div style={{ fontWeight: 600, fontSize: '14px' }}>{req.employee_name}</div>
+                  <small style={{ color: 'var(--text-subtle)', fontSize: '11.5px' }}>
+                    #{req.request_number || req.leave_request_id}
+                  </small>
+                  {isDelegated && (
+                    <div style={{ marginTop: '4px' }}>
+                      <span
+                        style={{
+                          fontSize: '10.5px',
+                          fontWeight: 600,
+                          padding: '2px 7px',
+                          borderRadius: '999px',
+                          background: 'rgba(245, 158, 11, 0.15)',
+                          color: '#fbbf24',
+                          border: '1px solid rgba(245, 158, 11, 0.35)',
+                        }}
+                      >
+                        <i className="bi bi-arrow-repeat" style={{ marginRight: '4px' }} />
+                        Delegated from {req.approver_name}
+                      </span>
+                    </div>
+                  )}
+                </td>
+                <td>
+                  <div style={{ fontWeight: 600 }}>{req.leave_name}</div>
+                  <small style={{ color: 'var(--text-muted)' }}>
+                    {req.start_date} → {req.end_date}
+                  </small>
+                </td>
+                <td style={{ fontWeight: 700, fontSize: '14.5px' }}>
+                  {req.deducted_days} d
+                </td>
+                <td>
+                  <span
+                    style={{
+                      fontSize: '11.5px',
+                      fontWeight: 600,
+                      padding: '3px 8px',
+                      borderRadius: '999px',
+                      background: 'rgba(16, 185, 129, 0.15)',
+                      color: '#34d399',
+                      border: '1px solid rgba(16, 185, 129, 0.3)',
+                    }}
+                  >
+                    <i className="bi bi-shield-check" style={{ marginRight: '4px' }} />
+                    Within {data.slaDays}d SLA
+                  </span>
+                </td>
+                <td>
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                    {isAdvance && (
+                      <span style={{ fontSize: '11px', padding: '2px 6px', borderRadius: '4px', background: 'rgba(245, 158, 11, 0.2)', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.4)' }}>
+                        Advance Leave
+                      </span>
+                    )}
+                    {isLongLeave && (
+                      <span style={{ fontSize: '11px', padding: '2px 6px', borderRadius: '4px', background: 'rgba(139, 92, 246, 0.2)', color: '#c084fc', border: '1px solid rgba(139, 92, 246, 0.4)' }}>
+                        Long Leave (Routes to HR)
+                      </span>
+                    )}
+                    {!isAdvance && !isLongLeave && (
+                      <span style={{ fontSize: '11px', color: 'var(--text-subtle)' }}>Standard</span>
+                    )}
+                  </div>
+                </td>
+                <td>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                      onClick={() => openDecision(req, 'approve')}
+                      disabled={actionLoading === req.leave_request_id}
+                      className="btn-glass btn-success-glass"
+                      style={{ padding: '6px 12px', fontSize: '12px' }}
+                    >
+                      <i className="bi bi-check-lg" />
+                      <span>Approve</span>
+                    </button>
+                    <button
+                      onClick={() => openDecision(req, 'reject')}
+                      disabled={actionLoading === req.leave_request_id}
+                      className="btn-glass btn-danger-glass"
+                      style={{ padding: '6px 12px', fontSize: '12px' }}
+                    >
+                      <i className="bi bi-x-lg" />
+                      <span>Reject</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+
+  const renderEmptyState = (message) => (
+    <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)' }}>
+      <i className="bi bi-check2-circle" style={{ fontSize: '32px', color: '#10b981', display: 'block', marginBottom: '10px' }} />
+      <small style={{ color: 'var(--text-subtle)' }}>{message}</small>
+    </div>
+  );
 
   return (
     <div className="container-fluid" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -199,137 +341,131 @@ export const ApprovalsQueue = () => {
         </div>
       )}
 
-      {/* Queue Table */}
-      <GlassCard style={{ padding: 0, overflow: 'hidden' }}>
-        {loading ? (
+      {/* Queue */}
+      {loading ? (
+        <GlassCard style={{ padding: 0, overflow: 'hidden' }}>
           <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--text-muted)' }}>
             <i className="bi bi-arrow-repeat spin" style={{ fontSize: '28px', color: 'var(--primary)' }} />
             <p style={{ marginTop: '10px' }}>Loading approvals queue...</p>
           </div>
-        ) : items.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--text-muted)' }}>
-            <i className="bi bi-check2-circle" style={{ fontSize: '40px', color: '#10b981', display: 'block', marginBottom: '10px' }} />
-            <p style={{ fontSize: '16px', fontWeight: 600 }}>Queue Clear!</p>
-            <small style={{ color: 'var(--text-subtle)' }}>No requests pending your decision at this time.</small>
-          </div>
-        ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table className="glass-table">
-              <thead>
-                <tr>
-                  {activeTab === 'pending' && (
-                    <th style={{ width: '40px' }}>
-                      <input
-                        type="checkbox"
-                        checked={selectedIds.length === data.pending.length && data.pending.length > 0}
-                        onChange={handleSelectAll}
-                        style={{ accentColor: '#3b82f6', width: '16px', height: '16px' }}
-                      />
-                    </th>
-                  )}
-                  <th>Employee</th>
-                  <th>Dates & Leave Type</th>
-                  <th>Deducted</th>
-                  <th>SLA Urgency</th>
-                  <th>Compliance Flags</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((req) => {
-                  const isLongLeave = req.deducted_days > data.longLeaveThreshold;
-                  const isAdvance = req.is_advance_leave === 1;
-
-                  return (
-                    <tr key={req.leave_request_id}>
-                      {activeTab === 'pending' && (
-                        <td>
-                          <input
-                            type="checkbox"
-                            checked={selectedIds.includes(req.leave_request_id)}
-                            onChange={() => toggleSelect(req.leave_request_id)}
-                            style={{ accentColor: '#3b82f6', width: '16px', height: '16px' }}
-                          />
-                        </td>
-                      )}
-                      <td>
-                        <div style={{ fontWeight: 600, fontSize: '14px' }}>{req.full_name}</div>
-                        <small style={{ color: 'var(--text-subtle)', fontSize: '11.5px' }}>
-                          #{req.request_number || req.leave_request_id}
-                        </small>
-                      </td>
-                      <td>
-                        <div style={{ fontWeight: 600 }}>{req.leave_name}</div>
-                        <small style={{ color: 'var(--text-muted)' }}>
-                          {req.start_date} → {req.end_date}
-                        </small>
-                      </td>
-                      <td style={{ fontWeight: 700, fontSize: '14.5px' }}>
-                        {req.deducted_days} d
-                      </td>
-                      <td>
-                        <span
-                          style={{
-                            fontSize: '11.5px',
-                            fontWeight: 600,
-                            padding: '3px 8px',
-                            borderRadius: '999px',
-                            background: 'rgba(16, 185, 129, 0.15)',
-                            color: '#34d399',
-                            border: '1px solid rgba(16, 185, 129, 0.3)',
-                          }}
-                        >
-                          <i className="bi bi-shield-check" style={{ marginRight: '4px' }} />
-                          Within {data.slaDays}d SLA
-                        </span>
-                      </td>
-                      <td>
-                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                          {isAdvance && (
-                            <span style={{ fontSize: '11px', padding: '2px 6px', borderRadius: '4px', background: 'rgba(245, 158, 11, 0.2)', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.4)' }}>
-                              Advance Leave
-                            </span>
-                          )}
-                          {isLongLeave && (
-                            <span style={{ fontSize: '11px', padding: '2px 6px', borderRadius: '4px', background: 'rgba(139, 92, 246, 0.2)', color: '#c084fc', border: '1px solid rgba(139, 92, 246, 0.4)' }}>
-                              Long Leave (Routes to HR)
-                            </span>
-                          )}
-                          {!isAdvance && !isLongLeave && (
-                            <span style={{ fontSize: '11px', color: 'var(--text-subtle)' }}>Standard</span>
-                          )}
-                        </div>
-                      </td>
-                      <td>
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                          <button
-                            onClick={() => openDecision(req, 'approve')}
-                            disabled={actionLoading === req.leave_request_id}
-                            className="btn-glass btn-success-glass"
-                            style={{ padding: '6px 12px', fontSize: '12px' }}
-                          >
-                            <i className="bi bi-check-lg" />
-                            <span>Approve</span>
-                          </button>
-                          <button
-                            onClick={() => openDecision(req, 'reject')}
-                            disabled={actionLoading === req.leave_request_id}
-                            className="btn-glass btn-danger-glass"
-                            style={{ padding: '6px 12px', fontSize: '12px' }}
-                          >
-                            <i className="bi bi-x-lg" />
-                            <span>Reject</span>
-                          </button>
-                        </div>
-                      </td>
+        </GlassCard>
+      ) : activeTab === 'cancellations' ? (
+        <GlassCard style={{ padding: 0, overflow: 'hidden' }}>
+          {items.length === 0
+            ? (
+              <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--text-muted)' }}>
+                <i className="bi bi-check2-circle" style={{ fontSize: '40px', color: '#10b981', display: 'block', marginBottom: '10px' }} />
+                <p style={{ fontSize: '16px', fontWeight: 600 }}>Queue Clear!</p>
+                <small style={{ color: 'var(--text-subtle)' }}>No requests pending your decision at this time.</small>
+              </div>
+            )
+            : (
+              <div style={{ overflowX: 'auto' }}>
+                <table className="glass-table">
+                  <thead>
+                    <tr>
+                      <th>Employee</th>
+                      <th>Dates & Leave Type</th>
+                      <th>Deducted</th>
+                      <th>SLA Urgency</th>
+                      <th>Compliance Flags</th>
+                      <th>Action</th>
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                  </thead>
+                  <tbody>
+                    {items.map((req) => {
+                      const isLongLeave = req.deducted_days > data.longLeaveThreshold;
+                      const isAdvance = req.is_advance_leave === 1;
+                      return (
+                        <tr key={req.leave_request_id}>
+                          <td>
+                            <div style={{ fontWeight: 600, fontSize: '14px' }}>{req.employee_name}</div>
+                            <small style={{ color: 'var(--text-subtle)', fontSize: '11.5px' }}>
+                              #{req.request_number || req.leave_request_id}
+                            </small>
+                          </td>
+                          <td>
+                            <div style={{ fontWeight: 600 }}>{req.leave_name}</div>
+                            <small style={{ color: 'var(--text-muted)' }}>
+                              {req.start_date} → {req.end_date}
+                            </small>
+                          </td>
+                          <td style={{ fontWeight: 700, fontSize: '14.5px' }}>{req.deducted_days} d</td>
+                          <td>
+                            <span
+                              style={{
+                                fontSize: '11.5px', fontWeight: 600, padding: '3px 8px', borderRadius: '999px',
+                                background: 'rgba(16, 185, 129, 0.15)', color: '#34d399', border: '1px solid rgba(16, 185, 129, 0.3)',
+                              }}
+                            >
+                              <i className="bi bi-shield-check" style={{ marginRight: '4px' }} />
+                              Within {data.slaDays}d SLA
+                            </span>
+                          </td>
+                          <td>
+                            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                              {isAdvance && (
+                                <span style={{ fontSize: '11px', padding: '2px 6px', borderRadius: '4px', background: 'rgba(245, 158, 11, 0.2)', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.4)' }}>
+                                  Advance Leave
+                                </span>
+                              )}
+                              {isLongLeave && (
+                                <span style={{ fontSize: '11px', padding: '2px 6px', borderRadius: '4px', background: 'rgba(139, 92, 246, 0.2)', color: '#c084fc', border: '1px solid rgba(139, 92, 246, 0.4)' }}>
+                                  Long Leave (Routes to HR)
+                                </span>
+                              )}
+                              {!isAdvance && !isLongLeave && (
+                                <span style={{ fontSize: '11px', color: 'var(--text-subtle)' }}>Standard</span>
+                              )}
+                            </div>
+                          </td>
+                          <td>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                              <button onClick={() => openDecision(req, 'approve')} disabled={actionLoading === req.leave_request_id} className="btn-glass btn-success-glass" style={{ padding: '6px 12px', fontSize: '12px' }}>
+                                <i className="bi bi-check-lg" />
+                                <span>Approve</span>
+                              </button>
+                              <button onClick={() => openDecision(req, 'reject')} disabled={actionLoading === req.leave_request_id} className="btn-glass btn-danger-glass" style={{ padding: '6px 12px', fontSize: '12px' }}>
+                                <i className="bi bi-x-lg" />
+                                <span>Reject</span>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+        </GlassCard>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '20px', alignItems: 'start' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <h3 style={{ fontSize: '15px', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <i className="bi bi-person-check" style={{ color: '#93c5fd' }} />
+              My Requests ({ownPending.length})
+            </h3>
+            <GlassCard style={{ padding: 0, overflow: 'hidden' }}>
+              {ownPending.length === 0
+                ? renderEmptyState('No requests pending your direct decision.')
+                : renderApprovalTable(ownPending)}
+            </GlassCard>
           </div>
-        )}
-      </GlassCard>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <h3 style={{ fontSize: '15px', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <i className="bi bi-arrow-repeat" style={{ color: '#fbbf24' }} />
+              Delegated To Me ({delegatedPending.length})
+            </h3>
+            <GlassCard style={{ padding: 0, overflow: 'hidden' }}>
+              {delegatedPending.length === 0
+                ? renderEmptyState('No requests currently delegated to you.')
+                : renderApprovalTable(delegatedPending, { isDelegated: true })}
+            </GlassCard>
+          </div>
+        </div>
+      )}
 
       {/* Decision Modal */}
       <Modal

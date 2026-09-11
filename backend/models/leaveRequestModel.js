@@ -117,11 +117,12 @@ const LeaveRequest = {
   // delegate gets additional visibility, the manager never loses theirs.
   pendingForApprover(approverId) {
     return db.prepare(`
-      SELECT lr.*, lt.leave_name, u.full_name AS employee_name, la.approval_id, la.approval_level, la.approver_id
+      SELECT lr.*, lt.leave_name, u.full_name AS employee_name, la.approval_id, la.approval_level, la.approver_id, mgr.full_name AS approver_name
       FROM leave_approvals la
       JOIN leave_requests lr ON lr.leave_request_id = la.leave_request_id
       JOIN leave_types lt ON lt.leave_type_id = lr.leave_type_id
       JOIN users u ON u.user_id = lr.employee_id
+      JOIN users mgr ON mgr.user_id = la.approver_id
       WHERE la.is_current = 1 AND la.status = 'PENDING'
         AND (
           la.approver_id = ?
