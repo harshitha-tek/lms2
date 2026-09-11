@@ -503,6 +503,20 @@ router.post('/admin/leave-types', (req, res) => {
   Audit.log(req.currentUser.user_id, 'leave_types', id, 'LEAVE_TYPE_CREATED');
   res.status(201).json({ success: true, id });
 });
+router.put('/admin/leave-types/:id/toggle', (req, res) => {
+  if (!req.currentUser.isHrAdmin) return res.status(403).json({ error: 'HR/Admin required.' });
+  const { enabled } = req.body;
+  const before = LeaveType.findById(req.params.id);
+  if (!before) return res.status(404).json({ error: 'Leave type not found.' });
+  try {
+    LeaveType.setSelectable(req.params.id, !!enabled);
+  } catch (err) {
+    return res.status(400).json({ error: err.message });
+  }
+  Audit.log(req.currentUser.user_id, 'leave_types', req.params.id, 'LEAVE_TYPE_TOGGLED',
+    { is_employee_selectable: before.is_employee_selectable }, { is_employee_selectable: enabled ? 1 : 0 });
+  res.json({ success: true });
+});
 
 // Admin: Configuration (LMS-020 to LMS-032)
 router.get('/admin/configuration', (req, res) => {

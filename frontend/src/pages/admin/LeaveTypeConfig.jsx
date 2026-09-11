@@ -31,6 +31,8 @@ export const LeaveTypeConfig = () => {
     fetchLeaveTypes();
   }, []);
 
+  const [togglingId, setTogglingId] = useState(null);
+
   const handleCreate = async (e) => {
     e.preventDefault();
     setSubmitting(true);
@@ -45,6 +47,27 @@ export const LeaveTypeConfig = () => {
       alert(err.message || 'Failed to create leave type');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleToggle = async (leaveType) => {
+    const nextEnabled = !leaveType.is_employee_selectable;
+    if (!window.confirm(
+      nextEnabled
+        ? `Enable "${leaveType.leave_name}"? Employees will be able to select it when applying for leave.`
+        : `Disable "${leaveType.leave_name}"? Employees will no longer be able to select it for new requests. Existing requests are unaffected.`
+    )) return;
+    setTogglingId(leaveType.leave_type_id);
+    try {
+      await api(`/admin/leave-types/${leaveType.leave_type_id}/toggle`, {
+        method: 'PUT',
+        body: JSON.stringify({ enabled: nextEnabled }),
+      });
+      fetchLeaveTypes();
+    } catch (err) {
+      alert(err.message || 'Failed to update leave type');
+    } finally {
+      setTogglingId(null);
     }
   };
 
@@ -82,6 +105,8 @@ export const LeaveTypeConfig = () => {
                   <th>Carry Forward</th>
                   <th>Balance Impact</th>
                   <th>Managed By</th>
+                  <th>Status</th>
+                  <th style={{ textAlign: 'center' }}>Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -138,6 +163,45 @@ export const LeaveTypeConfig = () => {
                           </span>
                         ) : (
                           <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Configured</span>
+                        )}
+                      </td>
+                      <td>
+                        {isLOP ? (
+                          <span style={{ fontSize: '12px', color: 'var(--text-subtle)' }}>N/A</span>
+                        ) : lt.is_employee_selectable ? (
+                          <span
+                            style={{
+                              fontSize: '11px', fontWeight: 700, padding: '3px 9px', borderRadius: '999px',
+                              background: 'rgba(16, 185, 129, 0.15)', color: '#059669', border: '1px solid rgba(16, 185, 129, 0.3)',
+                            }}
+                          >
+                            Enabled
+                          </span>
+                        ) : (
+                          <span
+                            style={{
+                              fontSize: '11px', fontWeight: 700, padding: '3px 9px', borderRadius: '999px',
+                              background: 'rgba(239, 68, 68, 0.12)', color: '#dc2626', border: '1px solid rgba(239, 68, 68, 0.25)',
+                            }}
+                          >
+                            Disabled
+                          </span>
+                        )}
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        {isLOP ? (
+                          <span style={{ fontSize: '12px', color: 'var(--text-subtle)' }}>—</span>
+                        ) : (
+                          <button
+                            onClick={() => handleToggle(lt)}
+                            disabled={togglingId === lt.leave_type_id}
+                            className={`btn-glass ${lt.is_employee_selectable ? 'btn-danger-glass' : 'btn-success-glass'}`}
+                            style={{ padding: '4px 10px', fontSize: '12px' }}
+                            title={lt.is_employee_selectable ? 'Disable for new applications' : 'Enable for new applications'}
+                          >
+                            <i className={`bi bi-toggle-${lt.is_employee_selectable ? 'on' : 'off'}`} />
+                            <span>{lt.is_employee_selectable ? 'Disable' : 'Enable'}</span>
+                          </button>
                         )}
                       </td>
                     </tr>
