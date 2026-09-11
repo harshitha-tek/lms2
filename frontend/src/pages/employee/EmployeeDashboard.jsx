@@ -4,6 +4,12 @@ import { api } from '../../services/api';
 import { GlassCard } from '../../components/common/GlassCard';
 import { StatusBadge } from '../../components/common/StatusBadge';
 
+// Per FRD 7.4: dates render as "DD MMM YYYY", not the raw YYYY-MM-DD the API returns.
+const formatDate = (dateStr) => {
+  if (!dateStr) return '';
+  return new Date(`${dateStr}T00:00:00`).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+};
+
 export const EmployeeDashboard = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -38,7 +44,7 @@ export const EmployeeDashboard = () => {
     );
   }
 
-  const { balances = [], pending = [], upcoming = [] } = data || {};
+  const { balances = [], pending = [], upcomingHolidays = [] } = data || {};
 
   return (
     <div className="container-fluid" style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
@@ -148,8 +154,9 @@ export const EmployeeDashboard = () => {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {pending.map((req) => (
-                <div
+                <Link
                   key={req.leave_request_id}
+                  to="/my-requests"
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -158,6 +165,10 @@ export const EmployeeDashboard = () => {
                     borderRadius: 'var(--radius-sm)',
                     background: 'rgba(255, 255, 255, 0.03)',
                     border: '1px solid rgba(255, 255, 255, 0.08)',
+                    textDecoration: 'none',
+                    color: 'inherit',
+                    cursor: 'pointer',
+                    transition: 'background 0.15s ease',
                   }}
                 >
                   <div>
@@ -170,53 +181,53 @@ export const EmployeeDashboard = () => {
                       )}
                     </div>
                     <small style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
-                      {req.start_date} → {req.end_date} • {req.deducted_days} day(s)
+                      {formatDate(req.start_date)} → {formatDate(req.end_date)} • {req.deducted_days} day(s)
                     </small>
                   </div>
                   <StatusBadge status={req.status} />
-                </div>
+                </Link>
               ))}
             </div>
           )}
         </GlassCard>
 
-        {/* Upcoming Approved Leave Strip */}
+        {/* Upcoming Holidays Strip */}
         <GlassCard
-          title="Upcoming Approved Leave"
-          icon="calendar-check"
+          title="Upcoming Holidays"
+          icon="calendar-heart"
           action={
-            <Link to="/team-calendar" style={{ fontSize: '12.5px', color: '#60a5fa' }}>
-              Team Calendar
+            <Link to="/holidays" style={{ fontSize: '12.5px', color: '#60a5fa' }}>
+              Full Calendar
             </Link>
           }
         >
-          {upcoming.length === 0 ? (
+          {upcomingHolidays.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '30px 0', color: 'var(--text-muted)' }}>
-              <i className="bi bi-calendar-event" style={{ fontSize: '24px', color: 'var(--text-subtle)', display: 'block', marginBottom: '8px' }} />
-              No upcoming scheduled leave.
+              <i className="bi bi-calendar-x" style={{ fontSize: '24px', color: 'var(--text-subtle)', display: 'block', marginBottom: '8px' }} />
+              No upcoming holidays scheduled.
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {upcoming.map((req) => (
+              {upcomingHolidays.map((h) => (
                 <div
-                  key={req.leave_request_id}
+                  key={h.holiday_id}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     padding: '12px 14px',
                     borderRadius: 'var(--radius-sm)',
-                    background: 'rgba(16, 185, 129, 0.05)',
-                    border: '1px solid rgba(16, 185, 129, 0.2)',
+                    background: 'rgba(245, 158, 11, 0.08)',
+                    border: '1px solid rgba(245, 158, 11, 0.2)',
                   }}
                 >
                   <div>
-                    <div style={{ fontWeight: 600, fontSize: '14px' }}>{req.leave_name}</div>
-                    <small style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
-                      {req.start_date} → {req.end_date} • {req.deducted_days} day(s)
-                    </small>
+                    <div style={{ fontWeight: 600, fontSize: '14px' }}>🎉 {h.holiday_name}</div>
+                    <small style={{ color: 'var(--text-muted)', fontSize: '12px' }}>{h.holiday_type}</small>
                   </div>
-                  <StatusBadge status={req.status} />
+                  <span style={{ fontSize: '13px', fontWeight: 700, color: '#fbbf24' }}>
+                    {new Date(`${h.holiday_date}T00:00:00`).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
+                  </span>
                 </div>
               ))}
             </div>

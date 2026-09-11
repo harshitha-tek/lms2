@@ -13,6 +13,15 @@ async function main() {
     user: process.env.MYSQL_USER, password: process.env.MYSQL_PASSWORD,
     database: process.env.MYSQL_DATABASE, multipleStatements: input.action === 'exec',
     decimalNumbers: true,
+    // Pure DATE columns (start_date, end_date, holiday_date, joined_date,
+    // effective_from/to, ...) must come back as the plain 'YYYY-MM-DD'
+    // string MySQL holds, not a JS Date. Letting mysql2 hand back a Date
+    // object here means it gets constructed at local midnight and then
+    // re-serialized to UTC by JSON.stringify, shifting the date backward
+    // by the server's UTC offset (a full day off in IST). Scoped to DATE
+    // only so DATETIME/TIMESTAMP audit columns (created_at, decided_at...)
+    // are unaffected.
+    dateStrings: ['DATE'],
   });
   const [rows] = await connection.query(input.sql, input.params);
   await connection.end();

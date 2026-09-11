@@ -48,10 +48,22 @@ router.use(ensureAuthenticated);
 
 router.get('/dashboard', (req, res) => {
   const year = dayjs().year();
+  const today = dayjs().format('YYYY-MM-DD');
   const leaveTypes = LeaveType.selectable();
   const balances = leaveTypes.map(leaveType => ({ leaveType, ...Ledger.effectiveBalance(req.currentUser.user_id, leaveType.leave_type_id, year) }));
   const requests = LeaveRequest.forEmployee(req.currentUser.user_id);
-  res.json({ balances, leaveTypes, pending: requests.filter(r => ['PENDING_MANAGER', 'PENDING_HR'].includes(r.status)), upcoming: requests.filter(r => r.status === 'APPROVED' && r.start_date >= dayjs().format('YYYY-MM-DD')), minimumLeaveDate: dayjs().format('YYYY-MM-DD') });
+  const upcomingHolidays = Holiday.all()
+    .filter(h => h.holiday_date >= today)
+    .sort((a, b) => a.holiday_date.localeCompare(b.holiday_date))
+    .slice(0, 5);
+  res.json({
+    balances,
+    leaveTypes,
+    pending: requests.filter(r => ['PENDING_MANAGER', 'PENDING_HR'].includes(r.status)),
+    upcoming: requests.filter(r => r.status === 'APPROVED' && r.start_date >= today),
+    upcomingHolidays,
+    minimumLeaveDate: today,
+  });
 });
 
 router.get('/leave/calculate', (req, res) => {
