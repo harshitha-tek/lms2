@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { Modal } from '../common/Modal';
 
 /* ─── Collapsible nav group (like reference image) ─── */
 const NavGroup = ({ label, icon, color = 'var(--text-muted)', defaultOpen = true, children }) => {
@@ -95,6 +96,7 @@ const NavItem = ({ to, icon, label, onClick, badge }) => {
 /* ─── Main Sidebar ─── */
 export const Sidebar = ({ isMobileOpen, closeMobile }) => {
   const { user, signOut } = useAuth();
+  const [signOutConfirmOpen, setSignOutConfirmOpen] = useState(false);
   if (!user) return null;
 
   return (
@@ -266,7 +268,7 @@ export const Sidebar = ({ isMobileOpen, closeMobile }) => {
 
           {/* Sign-out button */}
           <button
-            onClick={signOut}
+            onClick={() => setSignOutConfirmOpen(true)}
             className="btn-glass btn-danger-glass"
             style={{ width: '100%', justifyContent: 'flex-start', fontSize: '13px' }}
           >
@@ -275,6 +277,31 @@ export const Sidebar = ({ isMobileOpen, closeMobile }) => {
           </button>
         </div>
       </aside>
+
+      <Modal
+        isOpen={signOutConfirmOpen}
+        onClose={() => setSignOutConfirmOpen(false)}
+        title="Sign Out?"
+        maxWidth="400px"
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+          <p style={{ fontSize: '14px', color: 'var(--text-muted)' }}>
+            You'll need to sign in again to access your dashboard, requests, and approvals.
+          </p>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+            <button onClick={() => setSignOutConfirmOpen(false)} className="btn-glass">
+              Cancel
+            </button>
+            <button
+              onClick={() => { setSignOutConfirmOpen(false); signOut(); }}
+              className="btn-glass btn-danger-glass"
+            >
+              <i className="bi bi-box-arrow-right" />
+              <span>Sign Out</span>
+            </button>
+          </div>
+        </div>
+      </Modal>
     </>
   );
 };
