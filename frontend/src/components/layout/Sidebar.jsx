@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 /* ─── Collapsible nav group (like reference image) ─── */
@@ -45,7 +45,14 @@ const NavGroup = ({ label, icon, color = 'var(--text-muted)', defaultOpen = true
 };
 
 /* ─── Individual nav link item ─── */
-const NavItem = ({ to, icon, label, onClick, badge }) => (
+const NavItem = ({ to, icon, label, onClick, badge }) => {
+  // "/" renders the dashboard directly (no client-side redirect to
+  // "/dashboard"), so treat the root path as an alias when highlighting
+  // the Dashboard link as active.
+  const { pathname } = useLocation();
+  const forcedActive = to === '/dashboard' && pathname === '/';
+
+  return (
   <NavLink
     to={to}
     onClick={onClick}
@@ -55,12 +62,12 @@ const NavItem = ({ to, icon, label, onClick, badge }) => (
       gap: '11px',
       padding: '9px 12px',
       borderRadius: 'var(--radius-sm)',
-      color: isActive ? '#ffffff' : 'var(--text-muted)',
-      background: isActive ? 'var(--nav-active-bg)' : 'transparent',
-      borderLeft: isActive ? '3px solid var(--nav-active-border)' : '3px solid transparent',
+      color: (isActive || forcedActive) ? '#ffffff' : 'var(--text-muted)',
+      background: (isActive || forcedActive) ? 'var(--nav-active-bg)' : 'transparent',
+      borderLeft: (isActive || forcedActive) ? '3px solid var(--nav-active-border)' : '3px solid transparent',
       textDecoration: 'none',
       fontSize: '13.5px',
-      fontWeight: isActive ? 600 : 500,
+      fontWeight: (isActive || forcedActive) ? 600 : 500,
       transition: 'all 0.15s ease',
     })}
   >
@@ -82,7 +89,8 @@ const NavItem = ({ to, icon, label, onClick, badge }) => (
       </span>
     )}
   </NavLink>
-);
+  );
+};
 
 /* ─── Main Sidebar ─── */
 export const Sidebar = ({ isMobileOpen, closeMobile }) => {

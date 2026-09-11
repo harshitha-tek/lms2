@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import { AppShell } from './components/layout/AppShell';
 import { SignIn } from './pages/auth/SignIn';
@@ -79,8 +79,10 @@ export const App = () => {
   return (
     <Routes>
       <Route element={<AppShell />}>
-        {/* Default redirect for the layout route's own path ("/") */}
-        <Route index element={<Navigate to="/dashboard" replace />} />
+        {/* Render the dashboard directly at "/" instead of client-side
+            redirecting to "/dashboard" — avoids depending on a Navigate
+            effect firing correctly before first paint. */}
+        <Route index element={<EmployeeDashboard />} />
 
         {/* Employee Panel */}
         <Route path="/dashboard" element={<EmployeeDashboard />} />
