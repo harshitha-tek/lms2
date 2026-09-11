@@ -85,7 +85,17 @@ router.post('/leave/requests', upload.single('attachment'), (req, res) => {
   Audit.log(req.currentUser.user_id, 'leave_requests', id, action === 'draft' ? 'DRAFT_SAVED' : 'SUBMITTED');
   if (status === 'PENDING_MANAGER') {
     const approverId = routingService.resolveApprover(req.currentUser.user_id, 'MANAGER') || req.currentUser.manager_id;
-    if (approverId) LeaveRequest.createApproval(id, 'MANAGER', approverId);
+    if (approverId) {
+      LeaveRequest.createApproval(id, 'MANAGER', approverId);
+      const delegation = db.prepare(`
+        SELECT delegate_id FROM delegations
+        WHERE manager_id = ? AND effective_from <= date('now') AND (effective_to IS NULL OR effective_to >= date('now'))
+      `).get(approverId);
+      if (delegation) {
+        Notification.create(delegation.delegate_id, 'NEW_REQUEST_FOR_APPROVAL', 'New request for approval (delegated)',
+          `A request is pending in a manager's queue you're delegated for.`, id);
+      }
+    }
     Notification.create(req.currentUser.user_id, 'REQUEST_SUBMITTED', 'Leave request submitted', `Your request has been submitted.`, id);
   }
   res.status(201).json({ id, request: LeaveRequest.findById(id) });
@@ -148,6 +158,15 @@ router.post('/manager/approvals/:id/decide', (req, res) => {
   if (!request) return res.status(404).json({ error: 'Request not found.' });
   if (request.employee_id === req.currentUser.user_id) {
     return res.status(403).json({ error: 'Self-approval is prohibited.' });
+  }
+  const approval = LeaveRequest.findApproval(approvalId);
+  if (!approval || approval.leave_request_id !== request.leave_request_id || approval.is_current !== 1) {
+    return res.status(400).json({ error: 'This approval is no longer active.' });
+  }
+  const isDirectApprover = approval.approver_id === req.currentUser.user_id;
+  const isDelegate = !isDirectApprover && routingService.isActiveDelegateFor(req.currentUser.user_id, approval.approver_id);
+  if (!isDirectApprover && !isDelegate) {
+    return res.status(403).json({ error: 'You are not authorized to decide this approval.' });
   }
   const CURRENT_LEAVE_YEAR = dayjs().year();
   LeaveRequest.decideApproval(approvalId, decision === 'approve' ? 'APPROVED' : 'REJECTED', reason);
@@ -281,6 +300,46 @@ router.post('/admin/employees', (req, res) => {
   res.status(201).json({ success: true, id });
 });
 
+router.put('/admin/employees/:id', (req, res) => {
+  if (!req.currentUser.isHrAdmin) return res.status(403).json({ error: 'HR/Admin required.' });
+  const userId = parseInt(req.params.id, 10);
+  const { full_name, email, department_id, grade_id, management_level_id, manager_id } = req.body;
+  if (!full_name || !email) return res.status(400).json({ error: 'Full name and email are required.' });
+  db.prepare(`
+    UPDATE users
+    SET full_name = ?, email = ?, department_id = ?, grade_id = ?, management_level_id = ?, manager_id = ?
+    WHERE user_id = ?
+  `).run(full_name, email, department_id, grade_id, management_level_id, manager_id || null, userId);
+  const updated = User.findById(userId);
+  Audit.log(req.currentUser.user_id, 'users', userId, 'EMPLOYEE_UPDATED', null, { full_name, email, department_id, grade_id, management_level_id, manager_id });
+  res.json({ success: true, employee: updated });
+});
+
+// Admin: Departments
+router.get('/admin/departments', (req, res) => {
+  if (!req.currentUser.isHrAdmin) return res.status(403).json({ error: 'HR/Admin required.' });
+  res.json(db.prepare(`SELECT * FROM departments ORDER BY department_code`).all());
+});
+router.post('/admin/departments', (req, res) => {
+  if (!req.currentUser.isHrAdmin) return res.status(403).json({ error: 'HR/Admin required.' });
+  const department_code = String(req.body.department_code || '').trim();
+  const department_name = String(req.body.department_name || '').trim();
+  if (!department_code || !department_name) return res.status(400).json({ error: 'Code and name are required.' });
+  const clash = db.prepare(`SELECT 1 FROM departments WHERE department_code = ? OR department_name = ?`).get(department_code, department_name);
+  if (clash) return res.status(409).json({ error: 'A department with that code or name already exists.' });
+  const info = db.prepare(`INSERT INTO departments (department_code, department_name) VALUES (?, ?)`).run(department_code, department_name);
+  Audit.log(req.currentUser.user_id, 'departments', info.lastInsertRowid, 'DEPARTMENT_CREATED');
+  res.status(201).json({ success: true, department_id: info.lastInsertRowid });
+});
+router.delete('/admin/departments/:id', (req, res) => {
+  if (!req.currentUser.isHrAdmin) return res.status(403).json({ error: 'HR/Admin required.' });
+  const inUse = db.prepare(`SELECT COUNT(*) AS n FROM users WHERE department_id = ?`).get(req.params.id);
+  if (inUse && inUse.n > 0) return res.status(409).json({ error: `Cannot delete: ${inUse.n} employee(s) still assigned to this department.` });
+  db.prepare(`DELETE FROM departments WHERE department_id = ?`).run(req.params.id);
+  Audit.log(req.currentUser.user_id, 'departments', req.params.id, 'DEPARTMENT_DELETED');
+  res.json({ success: true });
+});
+
 // Admin: Leave Types & Policies (LMS-024 to LMS-027)
 router.get('/admin/leave-types', (req, res) => {
   if (!req.currentUser.isHrAdmin) return res.status(403).json({ error: 'HR/Admin required.' });
@@ -329,6 +388,58 @@ router.post('/admin/holidays', (req, res) => {
   const id = Holiday.create(holiday_date, holiday_name, type);
   Audit.log(req.currentUser.user_id, 'holidays', id, 'HOLIDAY_ADDED', null, { holiday_date, holiday_name, holiday_type: type });
   res.status(201).json({ success: true, id });
+});
+router.post('/admin/holidays/import', (req, res) => {
+  if (!req.currentUser.isHrAdmin) return res.status(403).json({ error: 'HR/Admin required.' });
+  const { rows } = req.body;
+  if (!Array.isArray(rows) || rows.length === 0) return res.status(400).json({ error: 'No data rows provided.' });
+
+  // MySQL DATE columns round-trip through mysql2 as timezone-shifted Date
+  // objects, so dedupe with a direct column comparison (MySQL coerces the
+  // 'YYYY-MM-DD' string) rather than a Set built from the model.
+  const dateExists = db.prepare(`SELECT 1 AS hit FROM holidays WHERE holiday_date = ?`);
+  const nameExists = db.prepare(`SELECT 1 AS hit FROM holidays WHERE LOWER(holiday_name) = LOWER(?)`);
+  const seenDates = new Set();
+  const seenNames = new Set();
+  const valid = [];
+  const errors = [];
+
+  rows.forEach((row, index) => {
+    const rowNumber = index + 1;
+    const date = String(row.holiday_date || row.date || '').trim();
+    const name = String(row.holiday_name || row.name || '').trim();
+    const type = String(row.holiday_type || row.type || 'NATIONAL').trim().toUpperCase();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !dayjs(date).isValid()) {
+      errors.push(`row ${rowNumber}: invalid date (expected YYYY-MM-DD)`);
+    } else if (!name) {
+      errors.push(`row ${rowNumber}: holiday name is required`);
+    } else if (!['NATIONAL', 'FESTIVAL', 'OPTIONAL'].includes(type)) {
+      errors.push(`row ${rowNumber}: type must be NATIONAL, FESTIVAL or OPTIONAL`);
+    } else if (seenDates.has(date) || dateExists.get(date)) {
+      errors.push(`row ${rowNumber}: a holiday on ${date} already exists`);
+    } else if (seenNames.has(name.toLowerCase()) || nameExists.get(name)) {
+      errors.push(`row ${rowNumber}: a holiday named "${name}" already exists`);
+    } else {
+      seenDates.add(date);
+      seenNames.add(name.toLowerCase());
+      valid.push({ date, name, type });
+    }
+  });
+
+  let imported = 0;
+  valid.forEach(({ date, name, type }) => {
+    try {
+      Holiday.create(date, name, type);
+      imported += 1;
+    } catch (err) {
+      errors.push(`${date}: could not be saved (${/duplicate/i.test(err.message) ? 'already exists' : 'database error'})`);
+    }
+  });
+  if (imported) {
+    Audit.log(req.currentUser.user_id, 'holidays', 0, 'HOLIDAYS_IMPORTED', null, { imported, skipped: errors.length });
+  }
+
+  res.status(imported ? 201 : 400).json({ imported, skipped: errors.length, errors });
 });
 router.delete('/admin/holidays/:id', (req, res) => {
   if (!req.currentUser.isHrAdmin) return res.status(403).json({ error: 'HR/Admin required.' });

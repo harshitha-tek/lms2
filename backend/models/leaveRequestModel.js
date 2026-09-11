@@ -112,16 +112,30 @@ const LeaveRequest = {
     `).run(status, reason || null, approvalId);
   },
 
+  // Includes both approvals directly assigned to approverId and approvals
+  // assigned to a manager who has delegated their queue to approverId — a
+  // delegate gets additional visibility, the manager never loses theirs.
   pendingForApprover(approverId) {
     return db.prepare(`
-      SELECT lr.*, lt.leave_name, u.full_name AS employee_name, la.approval_id, la.approval_level
+      SELECT lr.*, lt.leave_name, u.full_name AS employee_name, la.approval_id, la.approval_level, la.approver_id
       FROM leave_approvals la
       JOIN leave_requests lr ON lr.leave_request_id = la.leave_request_id
       JOIN leave_types lt ON lt.leave_type_id = lr.leave_type_id
       JOIN users u ON u.user_id = lr.employee_id
-      WHERE la.approver_id = ? AND la.is_current = 1 AND la.status = 'PENDING'
+      WHERE la.is_current = 1 AND la.status = 'PENDING'
+        AND (
+          la.approver_id = ?
+          OR la.approver_id IN (
+            SELECT manager_id FROM delegations
+            WHERE delegate_id = ? AND effective_from <= date('now') AND (effective_to IS NULL OR effective_to >= date('now'))
+          )
+        )
       ORDER BY lr.created_at ASC
-    `).all(approverId);
+    `).all(approverId, approverId);
+  },
+
+  findApproval(approvalId) {
+    return db.prepare(`SELECT * FROM leave_approvals WHERE approval_id = ?`).get(approvalId);
   },
 
   pendingCancellationsForApprover(approverId) {
