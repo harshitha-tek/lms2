@@ -13,7 +13,6 @@ export const TeamCalendar = () => {
   const [loading, setLoading] = useState(true);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(todayStr());
-  const [expandedDay, setExpandedDay] = useState(null);
 
   useEffect(() => {
     setLoading(true);
@@ -126,105 +125,64 @@ export const TeamCalendar = () => {
                   const visibleLeaves = cell.leaves.slice(0, maxDots);
                   const overflowCount = cell.leaves.length - visibleLeaves.length;
 
-                  const isExpanded = expandedDay === cell.dateStr;
-
                   return (
-                    <div key={cell.dateStr} style={{ position: 'relative' }}>
-                      <button
-                        onClick={() => { setSelectedDate(cell.dateStr); setExpandedDay(null); }}
-                        style={{
-                          width: '100%',
-                          minHeight: '84px',
-                          borderRadius: 'var(--radius-sm)',
-                          background: isSelected ? 'rgba(59, 130, 246, 0.18)' : isWeekend ? 'rgba(255, 255, 255, 0.02)' : 'rgba(255, 255, 255, 0.04)',
-                          border: isSelected ? '1px solid #3b82f6' : isToday ? '1px solid rgba(245, 158, 11, 0.5)' : '1px solid rgba(255, 255, 255, 0.07)',
-                          padding: '8px',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '6px',
-                          cursor: 'pointer',
-                          textAlign: 'left',
-                          font: 'inherit',
-                          color: 'inherit',
-                        }}
-                      >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <span style={{ fontSize: '13px', fontWeight: 700, color: isWeekend ? 'var(--text-subtle)' : 'var(--text-main)' }}>
-                            {cell.day}
-                          </span>
-                          {cell.holidays.length > 0 && (
-                            <i className="bi bi-star-fill" style={{ fontSize: '11px', color: '#f59e0b' }} title={cell.holidays[0].holiday_name} />
+                    <button
+                      key={cell.dateStr}
+                      onClick={() => setSelectedDate(cell.dateStr)}
+                      style={{
+                        minHeight: '84px',
+                        borderRadius: 'var(--radius-sm)',
+                        background: isSelected ? 'rgba(59, 130, 246, 0.18)' : isWeekend ? 'rgba(255, 255, 255, 0.02)' : 'rgba(255, 255, 255, 0.04)',
+                        border: isSelected ? '1px solid #3b82f6' : isToday ? '1px solid rgba(245, 158, 11, 0.5)' : '1px solid rgba(255, 255, 255, 0.07)',
+                        padding: '8px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '6px',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        font: 'inherit',
+                        color: 'inherit',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '13px', fontWeight: 700, color: isWeekend ? 'var(--text-subtle)' : 'var(--text-main)' }}>
+                          {cell.day}
+                        </span>
+                        {cell.holidays.length > 0 && (
+                          <i className="bi bi-star-fill" style={{ fontSize: '11px', color: '#f59e0b' }} title={cell.holidays[0].holiday_name} />
+                        )}
+                      </div>
+
+                      {/* Leave dots — approved only, name on hover, no reason/type ever shown */}
+                      {cell.leaves.length > 0 && (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', alignItems: 'center' }}>
+                          {visibleLeaves.map((l) => (
+                            <span
+                              key={l.id}
+                              title={l.employeeName}
+                              style={{
+                                width: '8px',
+                                height: '8px',
+                                borderRadius: '50%',
+                                background: '#10b981',
+                                display: 'inline-block',
+                                boxShadow: '0 0 0 1px rgba(16, 185, 129, 0.4)',
+                              }}
+                            />
+                          ))}
+                          {overflowCount > 0 && (
+                            <span style={{ fontSize: '10px', color: 'var(--text-subtle)', fontWeight: 600 }}>+{overflowCount}</span>
                           )}
                         </div>
-
-                        {/* Leave dots — approved only, no reason/type ever shown. Click a dot to reveal names. */}
-                        {cell.leaves.length > 0 && (
-                          <div
-                            role="button"
-                            tabIndex={0}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setExpandedDay((prev) => (prev === cell.dateStr ? null : cell.dateStr));
-                            }}
-                            style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', alignItems: 'center', cursor: 'pointer' }}
-                          >
-                            {visibleLeaves.map((l) => (
-                              <span
-                                key={l.id}
-                                title={l.employeeName}
-                                style={{
-                                  width: '8px',
-                                  height: '8px',
-                                  borderRadius: '50%',
-                                  background: '#10b981',
-                                  display: 'inline-block',
-                                  boxShadow: '0 0 0 1px rgba(16, 185, 129, 0.4)',
-                                }}
-                              />
-                            ))}
-                            {overflowCount > 0 && (
-                              <span style={{ fontSize: '10px', color: 'var(--text-subtle)', fontWeight: 600 }}>+{overflowCount}</span>
-                            )}
-                          </div>
-                        )}
-                      </button>
-
-                      {/* Click-to-reveal name list, small font, no reason/type */}
-                      {isExpanded && cell.leaves.length > 0 && (
-                        <div
-                          style={{
-                            position: 'absolute',
-                            top: '100%',
-                            left: 0,
-                            marginTop: '4px',
-                            zIndex: 30,
-                            background: 'rgba(15, 23, 42, 0.97)',
-                            border: '1px solid rgba(255, 255, 255, 0.15)',
-                            borderRadius: '8px',
-                            padding: '8px 10px',
-                            minWidth: '150px',
-                            boxShadow: '0 10px 28px rgba(0,0,0,0.45)',
-                          }}
-                        >
-                          <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--text-subtle)', textTransform: 'uppercase', marginBottom: '4px' }}>
-                            On Leave — {cell.dateStr}
-                          </div>
-                          {cell.leaves.map((l) => (
-                            <div key={l.id} style={{ fontSize: '11px', color: '#e2e8f0', padding: '2px 0', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981', flexShrink: 0 }} />
-                              {l.employeeName}
-                            </div>
-                          ))}
-                        </div>
                       )}
-                    </div>
+                    </button>
                   );
                 })}
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '16px', fontSize: '12px', color: 'var(--text-muted)' }}>
                 <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
-                <span>On approved leave — click a dot to see who's on leave that day</span>
+                <span>On approved leave — hover a dot for the name, or click a day to see the full list</span>
               </div>
             </>
           )}
