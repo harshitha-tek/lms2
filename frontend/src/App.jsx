@@ -79,8 +79,8 @@ export const App = () => {
   return (
     <Routes>
       <Route element={<AppShell />}>
-        {/* Default redirect */}
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        {/* Default redirect for the layout route's own path ("/") */}
+        <Route index element={<Navigate to="/dashboard" replace />} />
 
         {/* Employee Panel */}
         <Route path="/dashboard" element={<EmployeeDashboard />} />

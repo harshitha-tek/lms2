@@ -187,7 +187,7 @@ export const OrgConfig = () => {
                   onChange={(e) => handleChange('sla_period_days', e.target.value)}
                 />
                 <small style={{ color: 'var(--text-subtle)', fontSize: '11.5px', marginTop: '4px', display: 'block' }}>
-                  Default: 3 days. Reminder at 75%, escalation on breach (BR-33).
+                  Default: 1 days. Reminder at 75%, escalation on breach (BR-33).
                 </small>
               </div>
 
