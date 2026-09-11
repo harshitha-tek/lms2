@@ -4,8 +4,11 @@ const roleForUser = (userId) =>
   db.prepare(`SELECT r.role_code FROM user_roles ur JOIN roles r ON r.role_id = ur.role_id WHERE ur.user_id = ?`)
     .all(userId).map(r => r.role_code);
 
-const isManager = (userId) =>
-  db.prepare(`SELECT COUNT(*) AS c FROM users WHERE manager_id = ? AND is_active = 1`).get(userId).c > 0;
+const isManager = (userId) => {
+  const user = db.prepare(`SELECT employee_type FROM users WHERE user_id = ?`).get(userId);
+  if (user?.employee_type === 'MANAGER') return true;
+  return db.prepare(`SELECT COUNT(*) AS c FROM users WHERE manager_id = ? AND is_active = 1`).get(userId).c > 0;
+};
 
 const User = {
   findById(id) {
