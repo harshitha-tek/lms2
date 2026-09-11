@@ -202,12 +202,12 @@ export const EmployeeAdmin = () => {
                           fontSize: '11px',
                           padding: '3px 8px',
                           borderRadius: '999px',
-                          background: emp.isHrAdmin ? 'rgba(168, 85, 247, 0.2)' : emp.isManager ? 'rgba(59, 130, 246, 0.2)' : 'rgba(255, 255, 255, 0.08)',
-                          color: emp.isHrAdmin ? '#d8b4fe' : emp.isManager ? '#93c5fd' : '#e2e8f0',
+                          background: emp.isHrAdmin ? 'rgba(168, 85, 247, 0.2)' : emp.isManager ? 'rgba(59, 130, 246, 0.2)' : emp.employee_type === 'INTERN' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(255, 255, 255, 0.08)',
+                          color: emp.isHrAdmin ? '#d8b4fe' : emp.isManager ? '#93c5fd' : emp.employee_type === 'INTERN' ? '#fbbf24' : '#e2e8f0',
                           fontWeight: 600,
                         }}
                       >
-                        {emp.isHrAdmin ? 'HR / Admin' : emp.isManager ? 'Manager' : 'Employee'}
+                        {emp.isHrAdmin ? 'HR / Admin' : emp.isManager ? 'Manager' : emp.employee_type === 'INTERN' ? 'Intern' : 'Employee'}
                       </span>
                     </td>
                     <td>{emp.joined_date}</td>
@@ -297,6 +297,7 @@ export const EmployeeAdmin = () => {
                 onChange={(e) => setForm({ ...form, employee_type: e.target.value })}
               >
                 <option value="EMPLOYEE">Employee</option>
+                <option value="INTERN">Intern</option>
                 <option value="MANAGER">Manager</option>
                 <option value="HR_ADMIN">HR / Admin</option>
               </select>

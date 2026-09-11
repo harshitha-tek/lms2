@@ -441,7 +441,7 @@ router.post('/admin/employees', (req, res) => {
   if (!req.currentUser.isHrAdmin) return res.status(403).json({ error: 'HR/Admin required.' });
   const { employee_code, email, full_name, department_id, grade_id, management_level_id, manager_id, joined_date, employee_type } = req.body;
   const entra_object_id = `dev-${employee_code}-${Date.now()}`;
-  const type = ['EMPLOYEE', 'MANAGER', 'HR_ADMIN'].includes(employee_type) ? employee_type : 'EMPLOYEE';
+  const type = ['EMPLOYEE', 'MANAGER', 'HR_ADMIN', 'INTERN'].includes(employee_type) ? employee_type : 'EMPLOYEE';
   const id = User.create({ employee_code, entra_object_id, email, full_name, department_id, grade_id, management_level_id, manager_id: manager_id || null, joined_date, employee_type: type });
   Audit.log(req.currentUser.user_id, 'users', id, 'EMPLOYEE_CREATED');
   res.status(201).json({ success: true, id });

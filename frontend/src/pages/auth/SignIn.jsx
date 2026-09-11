@@ -130,7 +130,7 @@ export const SignIn = () => {
                           width: '32px',
                           height: '32px',
                           borderRadius: '50%',
-                          background: u.isHrAdmin ? 'rgba(168, 85, 247, 0.3)' : u.isManager ? 'rgba(59, 130, 246, 0.3)' : 'rgba(16, 185, 129, 0.3)',
+                          background: u.isHrAdmin ? 'rgba(168, 85, 247, 0.3)' : u.isManager ? 'rgba(59, 130, 246, 0.3)' : u.employee_type === 'INTERN' ? 'rgba(245, 158, 11, 0.3)' : 'rgba(16, 185, 129, 0.3)',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
@@ -153,11 +153,11 @@ export const SignIn = () => {
                         padding: '3px 8px',
                         borderRadius: '999px',
                         fontWeight: 600,
-                        background: u.isHrAdmin ? 'rgba(168, 85, 247, 0.2)' : u.isManager ? 'rgba(59, 130, 246, 0.2)' : 'rgba(16, 185, 129, 0.2)',
-                        color: u.isHrAdmin ? '#d8b4fe' : u.isManager ? '#93c5fd' : '#6ee7b7',
+                        background: u.isHrAdmin ? 'rgba(168, 85, 247, 0.2)' : u.isManager ? 'rgba(59, 130, 246, 0.2)' : u.employee_type === 'INTERN' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(16, 185, 129, 0.2)',
+                        color: u.isHrAdmin ? '#d8b4fe' : u.isManager ? '#93c5fd' : u.employee_type === 'INTERN' ? '#fbbf24' : '#6ee7b7',
                       }}
                     >
-                      {u.isHrAdmin ? 'HR / Admin' : u.isManager ? 'Manager' : 'Employee'}
+                      {u.isHrAdmin ? 'HR / Admin' : u.isManager ? 'Manager' : u.employee_type === 'INTERN' ? 'Intern' : 'Employee'}
                     </span>
                   </button>
                 ))}
