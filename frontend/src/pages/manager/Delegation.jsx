@@ -151,7 +151,7 @@ export const Delegation = () => {
               Select Eligible Delegate *
             </label>
             {data.eligibleDelegates.length === 0 ? (
-              <div style={{ color: '#f87171', fontSize: '13px' }}>No eligible peers found.</div>
+              <div style={{ color: '#f87171', fontSize: '13px' }}>No eligible peer managers found.</div>
             ) : (
               <select
                 className="glass-select"
@@ -161,7 +161,7 @@ export const Delegation = () => {
               >
                 {data.eligibleDelegates.map((u) => (
                   <option key={u.user_id} value={u.user_id}>
-                    {u.full_name} ({u.email})
+                    {u.full_name} ({u.isHrAdmin ? 'HR/Admin' : 'Manager'}) — {u.email}
                   </option>
                 ))}
               </select>

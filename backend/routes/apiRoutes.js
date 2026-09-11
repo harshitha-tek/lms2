@@ -348,21 +348,40 @@ router.delete('/manager/standing-watchers/:id', (req, res) => {
 });
 
 // Manager: Delegation (LMS-041)
+// The Delegate must be a peer Manager reporting to the same supervisor as the
+// nominating Manager (a "peer" who merely shares a supervisor is not enough —
+// they must themselves hold the Manager or HR/Admin role). Where no such peer
+// manager exists, the delegation defaults to the nominating Manager's own
+// supervisor. See "Detail on LMS-041": authority must never move sideways
+// into an unrelated part of the organisation.
+function eligibleDelegatesFor(userId) {
+  const currentUser = User.findById(userId);
+  const peerManagers = User.peers(userId)
+    .map(p => User.findById(p.user_id))
+    .filter(p => p.isManager || p.isHrAdmin);
+  if (peerManagers.length) return peerManagers;
+  return currentUser.manager_id ? [User.findById(currentUser.manager_id)] : [];
+}
+
 router.get('/manager/delegations', (req, res) => {
   const current = db.prepare(`
     SELECT d.*, u.full_name AS delegate_name FROM delegations d JOIN users u ON u.user_id=d.delegate_id
     WHERE d.manager_id=? ORDER BY d.effective_from DESC
   `).all(req.currentUser.user_id);
-  const peers = User.peers(req.currentUser.user_id).filter(p => p.manager_id);
-  const eligibleDelegates = peers.length ? peers : (req.currentUser.manager_id ? [User.findById(req.currentUser.manager_id)] : []);
-  res.json({ current, eligibleDelegates });
+  res.json({ current, eligibleDelegates: eligibleDelegatesFor(req.currentUser.user_id) });
 });
 router.post('/manager/delegations', (req, res) => {
   const { delegate_id, effective_from, effective_to } = req.body;
+  const delegateId = Number(delegate_id);
+  if (delegateId === req.currentUser.user_id) return res.status(400).json({ error: 'You cannot delegate to yourself.' });
+  const eligible = eligibleDelegatesFor(req.currentUser.user_id);
+  if (!eligible.some(u => u.user_id === delegateId)) {
+    return res.status(400).json({ error: 'The delegate must be a peer Manager reporting to the same supervisor, or your own supervisor where no peer manager exists.' });
+  }
   db.prepare(`INSERT INTO delegations (manager_id, delegate_id, effective_from, effective_to) VALUES (?,?,?,?)`)
-    .run(req.currentUser.user_id, delegate_id, effective_from, effective_to || null);
-  Audit.log(req.currentUser.user_id, 'delegations', 0, 'DELEGATION_CREATED', null, { delegate_id, effective_from, effective_to });
-  Notification.create(parseInt(delegate_id, 10), 'NEW_REQUEST_FOR_APPROVAL', 'Nominated as delegate',
+    .run(req.currentUser.user_id, delegateId, effective_from, effective_to || null);
+  Audit.log(req.currentUser.user_id, 'delegations', 0, 'DELEGATION_CREATED', null, { delegate_id: delegateId, effective_from, effective_to });
+  Notification.create(delegateId, 'NEW_REQUEST_FOR_APPROVAL', 'Nominated as delegate',
     `${req.currentUser.full_name} nominated you as delegate from ${effective_from}.`);
   res.status(201).json({ success: true });
 });
